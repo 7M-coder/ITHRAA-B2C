@@ -1,0 +1,28 @@
+{
+  "name": "ithraa-b2c",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev --",
+    "dev:backend": "php backend/artisan serve --host=127.0.0.1 --port=8000",
+    "build": "npm --prefix frontend run build",
+    "test:frontend": "npm --prefix frontend run test:run",
+    "test:backend": "composer --working-dir=backend test",
+    "test": "npm run test:frontend && npm run test:backend",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "lint:backend": "composer --working-dir=backend lint",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "format:check": "npm --prefix frontend run format:check && composer --working-dir=backend lint",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:db": "docker compose up -d mysql",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0"
+  }
+}

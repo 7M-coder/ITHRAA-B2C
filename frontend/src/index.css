@@ -1,0 +1,41 @@
+@layer theme, base, antd, components, utilities;
+@import 'tailwindcss';
+@import './fonts.css';
+:root {
+  --font-theme: 'TajawalRegular', sans-serif;
+  --color-primary: #050505;
+  --color-background: #f5f5f5;
+  --color-surface: #fff;
+  --color-accent: #3a608f;
+  color-scheme: light;
+}
+.dark {
+  --color-primary: #fefefe;
+  --color-background: #191c20;
+  --color-surface: #212326;
+  color-scheme: dark;
+}
+@theme inline {
+  --font-sans: var(--font-theme);
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-accent: var(--color-accent);
+}
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-theme);
+}
+#root {
+  min-height: 100vh;
+}
+.starter {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.starter > * {
+  width: min(100%, 640px);
+}
