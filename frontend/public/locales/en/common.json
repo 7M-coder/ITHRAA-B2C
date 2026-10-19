@@ -11,6 +11,8 @@
   "dashboard": "Overview",
   "humanResources": "Human resources",
   "custodySection": "Custody management",
+  "operations": "Operations",
+  "buildPackage": "Build B2C package",
   "employees": "Employees",
   "payroll": "Payroll",
   "custody": "Custody",

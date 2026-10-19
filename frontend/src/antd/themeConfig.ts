@@ -22,8 +22,14 @@ export function getThemeConfig(dark: boolean): ThemeConfig {
     components: {
       Card: { headerFontSize: 17, headerHeight: 62 },
       Menu: {
-        itemSelectedBg: dark ? '#173e42' : '#e8f4f3',
-        itemSelectedColor: dark ? '#6ddad2' : '#00767a',
+        itemBg: 'transparent',
+        itemColor: '#e8f0f1',
+        itemHoverBg: '#006e72',
+        itemHoverColor: '#ffffff',
+        itemSelectedBg: '#00b5a4',
+        itemSelectedColor: '#003b3e',
+        subMenuItemSelectedColor: '#003b3e',
+        subMenuItemBg: 'transparent',
         itemHeight: 48
       },
       Table: {

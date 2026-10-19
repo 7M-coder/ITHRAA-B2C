@@ -8,6 +8,8 @@ import {
   InboxOutlined,
   SafetyCertificateOutlined,
   BankOutlined,
+  ToolOutlined,
+  GiftOutlined,
   MenuOutlined,
   DownOutlined,
   LogoutOutlined,
@@ -18,7 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/useTheme'
 import { useStorageStatus } from '../hooks/useDemoStore'
 import { formatDate, isoDate } from '../utils/domain'
-import ithraaMark from '@/assets/ithraa-mark.png'
+import ithraaWordmarkLight from '@/assets/ithraa-wordmark-light.png'
 /** Provides persistent navigation and demo account controls. @returns Application layout. */
 export function DemoLayout() {
   const { t, i18n } = useTranslation()
@@ -57,42 +59,55 @@ export function DemoLayout() {
       icon: <BankOutlined />,
       label: t('custodySection'),
       children: [navLink('custody', 'custody', <InboxOutlined />)]
+    },
+    {
+      key: 'operations',
+      icon: <ToolOutlined />,
+      label: t('operations'),
+      children: [navLink('buildPackage', 'packages', <GiftOutlined />)]
     }
   ]
   const navigation = (
-    <>
-      <Link to={`/${language}`} className="flex items-center gap-3 px-6 pb-7 pt-8 text-inherit! no-underline">
-        <img src={ithraaMark} alt="" className="h-12 w-12 shrink-0 object-contain" />
-        <div className="min-w-0">
-          <div className="text-xl font-bold text-[#008186]">{t('brand')}</div>
-          <div className="mt-1 text-xs leading-5 text-muted">{t('product')}</div>
-        </div>
+    <div className="min-h-full bg-[#008085] text-white">
+      <Link
+        to={`/${language}`}
+        className="flex flex-col items-center gap-2 px-6 pb-7 pt-8 text-center text-inherit! no-underline"
+      >
+        <img src={ithraaWordmarkLight} alt={t('brand')} className="h-14 w-auto max-w-full object-contain" />
+        <div className="text-xs leading-5 text-white/75">{t('product')}</div>
       </Link>
-      <div className="px-7 pb-3 text-xs tracking-widest text-muted">{t('workspace')}</div>
+      <div className="px-7 pb-3 text-xs tracking-widest text-white/65">{t('workspace')}</div>
       <Menu
-        className="border-none! bg-transparent! px-3"
+        className="sidebar-menu border-none! bg-transparent! px-3 [&_.ant-menu-submenu-arrow]:text-white/65!"
         mode="inline"
         selectedKeys={[currentPath]}
         defaultOpenKeys={
-          currentPath === 'custody' ? ['custody-section'] : currentPath ? ['human-resources'] : []
+          currentPath === 'custody'
+            ? ['custody-section']
+            : currentPath === 'packages'
+              ? ['operations']
+              : currentPath
+                ? ['human-resources']
+                : []
         }
         items={items}
       />
-      <div className="mx-6 mt-10 rounded-xl border border-line p-4">
-        <div className="mb-2 flex items-center gap-2 text-sm text-[#008186]">
+      <div className="mx-6 mt-10 rounded-xl border border-white/20 p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm text-white">
           <CheckCircleOutlined />
           {t('demo')}
         </div>
-        <p className="m-0 text-xs leading-6 text-muted">{t('localNote')}</p>
+        <p className="m-0 text-xs leading-6 text-white/75">{t('localNote')}</p>
       </div>
-    </>
+    </div>
   )
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 start-0 z-20 hidden w-64 border-e border-line bg-surface lg:block">
+      <aside className="fixed inset-y-0 start-0 z-20 hidden w-64 border-e border-[#006e72] bg-[#008085] lg:block">
         {navigation}
       </aside>
       <Drawer
+        className="sidebar-drawer"
         open={open}
         onClose={() => setOpen(false)}
         placement={language === 'ar' ? 'right' : 'left'}

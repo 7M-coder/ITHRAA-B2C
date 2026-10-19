@@ -13,7 +13,7 @@ void i18n
     supportedLngs: ['ar', 'en'],
     fallbackLng: 'ar',
     defaultNS: 'common',
-    ns: ['common', 'dashboard', 'employees', 'payroll', 'custody', 'clearance'],
+    ns: ['common', 'dashboard', 'employees', 'payroll', 'custody', 'clearance', 'packages'],
     fallbackNS: 'common',
     detection: {
       order: ['localStorage'],

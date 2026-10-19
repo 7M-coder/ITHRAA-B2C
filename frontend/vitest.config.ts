@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   test: {
     environment: 'jsdom',
+    environmentOptions: { jsdom: { url: 'http://localhost/' } },
     // jsdom 25 cannot parse Ant Design's CSS layers; verify styles in a real browser.
     onConsoleLog(log) {
       if (log.includes('Could not parse CSS stylesheet')) return false

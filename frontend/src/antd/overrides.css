@@ -9,6 +9,36 @@
 .ant-menu-item-selected {
   font-weight: 700;
 }
+.sidebar-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: #fff !important;
+  background: #006e72 !important;
+}
+.sidebar-menu .ant-menu-item-selected,
+.sidebar-menu .ant-menu-item-selected a,
+.sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
+  color: #003b3e !important;
+}
+.sidebar-menu .ant-menu-submenu-title:hover {
+  color: #fff !important;
+  background: #006e72 !important;
+}
+.sidebar-menu .ant-menu-sub {
+  background: transparent !important;
+}
+.sidebar-menu .ant-menu-item-selected {
+  padding-inline: 32px 12px !important;
+}
+.sidebar-drawer .ant-drawer-header,
+.sidebar-drawer .ant-drawer-body {
+  background: #008085;
+}
+.sidebar-drawer .ant-drawer-header {
+  border-bottom-color: rgb(255 255 255 / 20%);
+}
+.sidebar-drawer .ant-drawer-title,
+.sidebar-drawer .ant-drawer-close {
+  color: #fff;
+}
 .ant-table-wrapper .ant-table-cell {
   vertical-align: middle;
 }

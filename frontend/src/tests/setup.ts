@@ -5,10 +5,35 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import en from '../../public/locales/en/common.json'
 import ar from '../../public/locales/ar/common.json'
+import packagesEn from '../../public/locales/en/packages.json'
+import packagesAr from '../../public/locales/ar/packages.json'
+// Node 25 exposes a partial global localStorage that shadows jsdom's Storage.
+const localStorageData = new Map<string, string>()
+Object.defineProperties(window.Storage.prototype, {
+  getItem: {
+    configurable: true,
+    value: (key: string) => localStorageData.get(String(key)) ?? null
+  },
+  setItem: {
+    configurable: true,
+    value: (key: string, value: string) => localStorageData.set(String(key), String(value))
+  },
+  removeItem: { configurable: true, value: (key: string) => localStorageData.delete(String(key)) },
+  clear: { configurable: true, value: () => localStorageData.clear() },
+  key: {
+    configurable: true,
+    value: (index: number) => [...localStorageData.keys()][index] ?? null
+  },
+  length: { configurable: true, get: () => localStorageData.size }
+})
+const jsdomLocalStorage = Object.create(window.Storage.prototype) as Storage
+Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: jsdomLocalStorage })
+Object.defineProperty(window, 'localStorage', { configurable: true, value: jsdomLocalStorage })
 await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
-  resources: { en: { common: en }, ar: { common: ar } },
+  resources: { en: { common: en, packages: packagesEn }, ar: { common: ar, packages: packagesAr } },
+  ns: ['common', 'packages'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }
@@ -32,7 +57,10 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-Object.defineProperty(window, 'getComputedStyle', { value: window.getComputedStyle.bind(window) })
+const readComputedStyle = window.getComputedStyle.bind(window)
+Object.defineProperty(window, 'getComputedStyle', {
+  value: (element: Element) => readComputedStyle(element)
+})
 class ResizeObserverMock {
   observe() {}
   unobserve() {}
