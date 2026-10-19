@@ -7,6 +7,7 @@ import {
   WalletOutlined,
   InboxOutlined,
   SafetyCertificateOutlined,
+  BankOutlined,
   MenuOutlined,
   DownOutlined,
   LogoutOutlined,
@@ -17,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/useTheme'
 import { useStorageStatus } from '../hooks/useDemoStore'
 import { formatDate, isoDate } from '../utils/domain'
+import ithraaMark from '@/assets/ithraa-mark.png'
 /** Provides persistent navigation and demo account controls. @returns Application layout. */
 export function DemoLayout() {
   const { t, i18n } = useTranslation()
@@ -28,32 +30,52 @@ export function DemoLayout() {
   const [open, setOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const storageError = useStorageStatus((s) => s.error)
-  const items = [
-    ['dashboard', '', <AppstoreOutlined />],
-    ['employees', 'employees', <TeamOutlined />],
-    ['payroll', 'payroll', <WalletOutlined />],
-    ['custody', 'custody', <InboxOutlined />],
-    ['clearance', 'clearance', <SafetyCertificateOutlined />]
-  ].map(([label, path, icon]) => ({
-    key: String(path),
+  const currentPath = location.pathname.split('/')[2] || ''
+  const navLink = (key: string, path: string, icon: React.ReactNode) => ({
+    key: path,
     icon,
     label: (
       <Link onClick={() => setOpen(false)} to={`/${language}/${path}`}>
-        {t(String(label))}
+        {t(key)}
       </Link>
     )
-  }))
+  })
+  const items = [
+    navLink('dashboard', '', <AppstoreOutlined />),
+    {
+      key: 'human-resources',
+      icon: <TeamOutlined />,
+      label: t('humanResources'),
+      children: [
+        navLink('employees', 'employees', <TeamOutlined />),
+        navLink('payroll', 'payroll', <WalletOutlined />),
+        navLink('clearance', 'clearance', <SafetyCertificateOutlined />)
+      ]
+    },
+    {
+      key: 'custody-section',
+      icon: <BankOutlined />,
+      label: t('custodySection'),
+      children: [navLink('custody', 'custody', <InboxOutlined />)]
+    }
+  ]
   const navigation = (
     <>
-      <Link to={`/${language}`} className="block px-7 pb-9 pt-8 text-inherit! no-underline">
-        <div className="text-2xl font-bold text-[#008186]">{t('brand')}</div>
-        <div className="mt-1 text-xs text-muted">{t('product')}</div>
+      <Link to={`/${language}`} className="flex items-center gap-3 px-6 pb-7 pt-8 text-inherit! no-underline">
+        <img src={ithraaMark} alt="" className="h-12 w-12 shrink-0 object-contain" />
+        <div className="min-w-0">
+          <div className="text-xl font-bold text-[#008186]">{t('brand')}</div>
+          <div className="mt-1 text-xs leading-5 text-muted">{t('product')}</div>
+        </div>
       </Link>
       <div className="px-7 pb-3 text-xs tracking-widest text-muted">{t('workspace')}</div>
       <Menu
         className="border-none! bg-transparent! px-3"
         mode="inline"
-        selectedKeys={[location.pathname.split('/')[2] || '']}
+        selectedKeys={[currentPath]}
+        defaultOpenKeys={
+          currentPath === 'custody' ? ['custody-section'] : currentPath ? ['human-resources'] : []
+        }
         items={items}
       />
       <div className="mx-6 mt-10 rounded-xl border border-line p-4">
@@ -69,7 +91,6 @@ export function DemoLayout() {
     <div className="min-h-screen">
       <aside className="fixed inset-y-0 start-0 z-20 hidden w-64 border-e border-line bg-surface lg:block">
         {navigation}
-        <div className="absolute bottom-7 start-7 text-xs text-muted">{t('brand')} · 2026</div>
       </aside>
       <Drawer
         open={open}
