@@ -6,7 +6,7 @@ import i18n from 'i18next'
 vi.mock('@/i18n/config', () => ({
   getSavedLanguage: () => (localStorage.getItem('i18nextLng') === 'en' ? 'en' : 'ar')
 }))
-import { AppShell } from '@/App'
+import { AppShell } from '@/AppShell'
 import axiosClient from '@/api/axiosInstance'
 import { getErrorMessage, getValidationErrors } from '@/api/utils/errorUtils'
 const mount = (route = '/') =>
@@ -21,17 +21,17 @@ beforeEach(async () => {
 describe('starter', () => {
   it('defaults to Arabic and switches language and document direction', async () => {
     mount()
-    await screen.findByText('أساس الواجهة الأمامية جاهز للبدء.')
+    await screen.findByText('نظرة واضحة على فريقك، وعُهدك، وما يحتاج اهتمامك اليوم.')
     expect(document.documentElement).toHaveAttribute('dir', 'rtl')
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
-    await screen.findByText('Your frontend foundation is ready.')
+    await screen.findByText('Your people, assets, and priorities — all in one place.')
     await waitFor(() => expect(document.documentElement).toHaveAttribute('lang', 'en'))
     expect(document.documentElement).toHaveAttribute('dir', 'ltr')
   })
   it('uses the saved English language at the root', async () => {
     localStorage.setItem('i18nextLng', 'en')
     mount()
-    await screen.findByText('Your frontend foundation is ready.')
+    await screen.findByText('Your people, assets, and priorities — all in one place.')
     expect(document.documentElement).toHaveAttribute('dir', 'ltr')
   })
   it('restores and persists theme selection', async () => {
@@ -43,11 +43,9 @@ describe('starter', () => {
     expect(localStorage.getItem('theme')).toBe('light')
     expect(document.documentElement).toHaveClass('light')
   })
-  it('shows a not-found page with a working home link', async () => {
+  it('redirects an unknown page to the dashboard', async () => {
     mount('/ar/missing')
-    await screen.findByText('الصفحة غير موجودة')
-    await userEvent.click(screen.getByRole('link', { name: 'العودة إلى الرئيسية' }))
-    await screen.findByText('أساس الواجهة الأمامية جاهز للبدء.')
+    await screen.findByText('نظرة واضحة على فريقك، وعُهدك، وما يحتاج اهتمامك اليوم.')
   })
 })
 describe('API foundation', () => {

@@ -13,7 +13,8 @@ void i18n
     supportedLngs: ['ar', 'en'],
     fallbackLng: 'ar',
     defaultNS: 'common',
-    ns: ['common'],
+    ns: ['common', 'dashboard', 'employees', 'payroll', 'custody', 'clearance'],
+    fallbackNS: 'common',
     detection: {
       order: ['localStorage'],
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,

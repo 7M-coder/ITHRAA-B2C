@@ -1,4 +1,27 @@
-/* Ant Design uses the shared Tajawal font in both directions. */
+/* Shared presentation overrides, including dark mode and compact mobile dialogs. */
 .ant-app {
   font-family: var(--font-theme);
+  color: var(--color-ink);
+}
+.ant-card {
+  box-shadow: 0 3px 16px #183c4803;
+}
+.ant-menu-item-selected {
+  font-weight: 700;
+}
+.ant-table-wrapper .ant-table-cell {
+  vertical-align: middle;
+}
+.ant-modal {
+  max-width: calc(100vw - 24px);
+}
+.ant-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-inline: 2px;
+}
+.ant-btn:focus-visible,
+a:focus-visible {
+  outline: 3px solid #00b5a4;
+  outline-offset: 3px;
 }

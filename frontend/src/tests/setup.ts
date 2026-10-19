@@ -10,6 +10,7 @@ await i18n.use(initReactI18next).init({
   fallbackLng: 'ar',
   resources: { en: { common: en }, ar: { common: ar } },
   defaultNS: 'common',
+  fallbackNS: 'common',
   interpolation: { escapeValue: false }
 })
 Object.defineProperty(window, 'matchMedia', {
@@ -30,3 +31,11 @@ afterEach(() => {
   localStorage.clear()
   vi.clearAllMocks()
 })
+
+Object.defineProperty(window, 'getComputedStyle', { value: window.getComputedStyle.bind(window) })
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('ResizeObserver', ResizeObserverMock)
