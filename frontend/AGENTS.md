@@ -20,7 +20,7 @@ Ithraa B2C is an internal platform for a Hajj company, operated by its IT depart
 
 Pilgrims are organized into groups called blocks whose members share flight, train, bus, hotel, and sightseeing arrangements in Makkah and Madinah. Bookings are made outside the platform and entered manually. The system displays planned schedules; it does not require real-time location tracking. Pilgrims are records, not system user accounts.
 
-This frontend belongs to the `ithraa-b2c` monorepo alongside a Laravel API backend backed by MySQL. Arabic and English are supported. Package management, shared bookings between blocks, and room allocation remain open requirements documented in `../requirements.md`.
+This frontend belongs to the `ithraa-b2c` monorepo alongside a Laravel API backend backed by MySQL. Arabic and English are supported. Package management, shared bookings between blocks, and room allocation remain open requirements documented in `../packagesrequirments.md`.
 
 ## Architecture and Implementation Instructions
 

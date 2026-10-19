@@ -7,7 +7,7 @@ These instructions apply to `backend/`. Read them together with the Laravel Boos
 - Backend: Laravel API, PHP, Eloquent, MySQL, and PHPUnit. Confirm installed versions in `composer.lock` / `composer show` before using version-specific APIs.
 - Frontend: a separate React application in `../frontend/`. Return JSON; do not introduce Blade pages or Inertia for application features.
 - Use the existing Laravel directories and conventions. Inspect related controllers, models, routes, tests, and configuration before changing them.
-- Read `../requirements.md` before implementing domain features. User-approved requirements take precedence; unresolved questions are not approved functionality.
+- Read `../packagesrequirments.md` before implementing domain features. User-approved requirements take precedence; unresolved questions are not approved functionality.
 - The system serves the IT staff of a Hajj company. Pilgrims are records, not login accounts. Keep `users` and `pilgrims` independent; do not inherit one from the other.
 - Date of birth belongs to pilgrims, not users. Store a birth date rather than a changing age.
 - Pilgrims belong to blocks whose members share travel arrangements. Do not add individual booking overrides or block transfers in the current scope.
@@ -25,7 +25,7 @@ Follow this sequence for each requested backend feature. Scale the work to the f
 - Cover creation, viewing, updating, and deletion only when those operations are requested or necessary for the agreed feature.
 - Identify required fields, optional fields, duplicates, missing records, and invalid input.
 - Check existing functionality and open requirements before inventing behavior.
-- Ask only about unresolved business decisions that materially affect correctness; continue independent work while waiting. Record unresolved product questions in `../requirements.md` when appropriate.
+- Ask only about unresolved business decisions that materially affect correctness; continue independent work while waiting. Record unresolved product questions in `../packagesrequirments.md` when appropriate.
 - Define a small set of observable acceptance criteria that will become tests.
 
 **Output:** a clear description of the feature and its success/failure cases.
