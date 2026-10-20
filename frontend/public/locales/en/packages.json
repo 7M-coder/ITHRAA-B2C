@@ -147,7 +147,8 @@
     "packageMissing": "Package not found.",
     "duplicateBlockCode": "This block code is already used in the same season.",
     "packageUnavailable": "Choose an available package with an active provider.",
-    "packageMismatch": "The package season and pilgrim type must match the block."
+    "packageMismatch": "The package season and pilgrim type must match the block.",
+    "invalidTransportProvider": "Choose an active transport provider from the service providers list."
   },
   "provider": {
     "heading": "Service provider directory",
@@ -210,7 +211,7 @@
     "notes": "Notes",
     "nights": "Nights",
     "beds": "Allocated beds",
-    "bedsNote": "Enter the total beds allocated to each room type. A difference from capacity warns without blocking draft saving.",
+    "bedsNote": "Choose double, triple or quadruple rooms. Each room has one bed per person.",
     "noStays": "No stays added",
     "stay": "Stay",
     "addStay": "Add stay",
@@ -278,7 +279,11 @@
       "economy": "Economy",
       "standard": "Standard",
       "premium": "Premium",
-      "luxury": "Luxury"
+      "luxury": "Luxury",
+      "luxury_transitional": "Transitional luxury",
+      "premium_transitional": "Transitional premium",
+      "basic": "Basic",
+      "basic_transitional": "Transitional basic"
     },
     "steps": {
       "general": "General",
@@ -320,7 +325,8 @@
       "unsafe": "Remove unsupported content from text fields.",
       "seasonRange": "Allowed dates are 8 April through 5 June 2027.",
       "periodOverlap": "Each period must start on or after the previous checkout.",
-      "invalidTransport": "This transport mode is not permitted for the selected type."
+      "invalidTransport": "This transport mode is not permitted for the selected type.",
+      "periodLimit": "A stay can have at most 3 periods. Reduce extra periods before saving."
     },
     "confirmOption": "I reviewed this option after the stay changes",
     "removeOption": "Remove occupancy option",
@@ -356,7 +362,7 @@
     "transportMode": "Transport mode",
     "periodCount": "Number of periods",
     "periodNumber": "Period {{number}}",
-    "periodsHelp": "All periods use this hotel and stay type. Their nights are added to the cost; periods within the same stay must not overlap.",
+    "periodsHelp": "Up to 3 periods for the same hotel and housing type. All nights count toward cost; periods within one stay must not overlap.",
     "periodDuration": "{{nights}} nights · {{days}} days",
     "totalNights": "Total nights",
     "removePeriods": "Reduce period count",
@@ -387,6 +393,30 @@
       "haramain_train": "Haramain train",
       "private_car": "Private car",
       "mashair_train": "Mashair train"
-    }
+    },
+    "roomTypes": {
+      "2": "Double (2 beds, 2 people)",
+      "3": "Triple (3 beds, 3 people)",
+      "4": "Quadruple (4 beds, 4 people)"
+    },
+    "richText": {
+      "toolbar": "Package description formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "heading": "Heading",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "right": "Right",
+      "center": "Center",
+      "left": "Left",
+      "undo": "Undo",
+      "redo": "Redo",
+      "hint": "Write or paste Arabic and English descriptions with headings, paragraphs and lists. Maximum 20,000 characters."
+    },
+    "transportProvider": "Transport service provider",
+    "chooseTransportProvider": "Choose from service providers",
+    "noTransportProviders": "No active transport providers",
+    "transportProvidersHint": "Names come from active service providers categorized as Transport. Add the provider to that list if it is missing."
   }
 }

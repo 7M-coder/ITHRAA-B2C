@@ -8,10 +8,11 @@ import {
   requiredPackageTextSchema,
   currencyCodeSchema
 } from './legacySchemas'
-import { stayPeriods } from '../utils/periods'
+import { stayPeriods, MAX_STAY_PERIODS } from '../utils/periods'
 import { isSeasonDate } from '../utils/dates'
 import { validTransport } from '../utils/transport'
 import { readiness } from '../utils/finance'
+import { descriptionDocumentSchema, descriptionTextSchema } from '../utils/description'
 export {
   createPackageFieldRule,
   packageLongTextSchema,
@@ -95,7 +96,17 @@ export const editorSchema = z.object({
       city: z.number().finite().min(0).max(100)
     })
     .optional(),
-  category: z.enum(['', 'economy', 'standard', 'premium', 'luxury']),
+  category: z.enum([
+    '',
+    'economy',
+    'standard',
+    'premium',
+    'luxury',
+    'luxury_transitional',
+    'premium_transitional',
+    'basic',
+    'basic_transitional'
+  ]),
   capacity: z.number().int().positive().nullable(),
   stays: z.array(stay),
   options: z.array(option),
@@ -105,6 +116,7 @@ export const editorSchema = z.object({
       category: z.enum(['transportation', 'mashair', 'meals', 'guidance', 'visa', 'additional']),
       transportType: z.enum(['intercity', 'mashair']).optional(),
       transportMode: z.enum(['bus', 'haramain_train', 'private_car', 'mashair_train']).optional(),
+      providerId: z.string().min(1).optional(),
       description: text,
       included: z.boolean()
     })
@@ -129,6 +141,8 @@ export const packageRecordSchema = legacyPackageSchema
   .innerType()
   .extend({
     pilgrimType: z.literal('international'),
+    description: descriptionTextSchema,
+    descriptionDocument: descriptionDocumentSchema.optional(),
     providerId: z.string(),
     startDate: date,
     endDate: date,
@@ -196,6 +210,14 @@ export const packageRecordSchema = legacyPackageSchema
   })
 /** Validates writes against the current season while permitting retained historical records to hydrate. */
 export const packageSchema = packageRecordSchema.superRefine((p, ctx) => {
+  p.editor.stays.forEach((s, i) => {
+    if (stayPeriods(s).length > MAX_STAY_PERIODS)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['editor', 'stays', i, 'periods'],
+        message: 'periodLimit'
+      })
+  })
   for (const key of ['startDate', 'endDate'] as const)
     if (!isSeasonDate(p[key])) ctx.addIssue({ code: 'custom', path: [key], message: 'seasonRange' })
   p.editor.stays.forEach((s, i) =>
@@ -222,6 +244,10 @@ export const packageDemoSchema = z
     for (const p of data.packages)
       if (p.providerId && !data.providers.some((v) => v.id === p.providerId))
         ctx.addIssue({ code: 'custom', message: 'missingProvider' })
+    for (const p of data.packages)
+      for (const service of p.editor.services)
+        if (service.providerId && !data.providers.some((v) => v.id === service.providerId))
+          ctx.addIssue({ code: 'custom', message: 'missingProvider' })
     for (const b of data.blocks) {
       if (!b.packageId) continue
       const p = data.packages.find((p) => p.id === b.packageId)

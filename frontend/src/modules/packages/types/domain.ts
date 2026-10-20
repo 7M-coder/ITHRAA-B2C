@@ -89,6 +89,7 @@ export interface PackageServices {
 }
 
 export interface HajjPackage {
+  descriptionDocument?: import('@tiptap/react').JSONContent
   editor?: PackageEditorData
   id: string
   name: string

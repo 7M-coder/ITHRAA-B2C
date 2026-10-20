@@ -159,7 +159,7 @@ export default function PackageEditorPage() {
       >
         {step === 0 && <PackageGeneralStep item={item} onChange={change} providers={providers} />}{' '}
         {step === 1 && <PackageStaysStep item={item} onChange={change} />}{' '}
-        {step === 2 && <PackageServicesStep item={item} onChange={change} />}{' '}
+        {step === 2 && <PackageServicesStep item={item} onChange={change} providers={providers} />}{' '}
         {step === 3 && <PackageFinancialStep item={item} onChange={change} />}{' '}
         {step === 4 && (
           <PackageDetails

@@ -1,0 +1,31 @@
+.package-description .tiptap {
+  padding: 1rem;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.package-description .tiptap[contenteditable='true'] {
+  min-height: 16rem;
+  outline-color: #008186;
+}
+.package-description .tiptap p {
+  margin-block: 0.6em;
+  white-space: pre-wrap;
+}
+.package-description .tiptap h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-block: 1em 0.5em;
+}
+.package-description .tiptap h3 {
+  font-size: 1.25em;
+  font-weight: 700;
+  margin-block: 1em 0.5em;
+}
+.package-description .tiptap ul {
+  list-style: disc;
+  padding-inline-start: 1.5rem;
+}
+.package-description .tiptap ol {
+  list-style: decimal;
+  padding-inline-start: 1.5rem;
+}

@@ -54,6 +54,7 @@ export interface CostItem {
   tax: TaxTreatment
 }
 export interface ServiceItem {
+  providerId?: string
   transportType?: TransportType
   transportMode?: TransportMode
   id: string
@@ -63,7 +64,16 @@ export interface ServiceItem {
 }
 export interface PackageEditorData {
   bedTaxes?: BedTaxRates
-  category: '' | 'economy' | 'standard' | 'premium' | 'luxury'
+  category:
+    | ''
+    | 'economy'
+    | 'standard'
+    | 'premium'
+    | 'luxury'
+    | 'luxury_transitional'
+    | 'premium_transitional'
+    | 'basic'
+    | 'basic_transitional'
   capacity: number | null
   stays: PackageStay[]
   options: OccupancyOption[]

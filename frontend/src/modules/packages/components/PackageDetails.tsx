@@ -1,6 +1,8 @@
 import { Alert, Button, Card, Descriptions, Empty, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { stayPeriods } from '../utils/periods'
+import { PackageDescriptionEditor } from './PackageDescriptionEditor'
+import { usePackageStore } from '../hooks/usePackageStore'
 import type { HajjPackage, ServiceProvider } from '../types/domain'
 import {
   editorData,
@@ -18,6 +20,7 @@ interface Props {
 }
 /** Displays an ordered program and transparent per-option financial review. @param props - Package and optional edit shortcuts. @returns Review content. */
 export function PackageDetails({ item, onEdit }: Props) {
+  const providers = usePackageStore((s) => s.providers)
   const { t } = useTranslation('packages')
   const e = editorData(item)
   const missing = readiness(item)
@@ -63,7 +66,7 @@ export function PackageDetails({ item, onEdit }: Props) {
             { key: 'status', label: t('fields.status'), children: t(`values.${item.status}`) }
           ]}
         />
-        <p className="whitespace-pre-wrap">{item.description}</p>
+        <PackageDescriptionEditor item={item} />
       </Card>
       <Card
         title={t('editor.steps.stays')}
@@ -99,7 +102,7 @@ export function PackageDetails({ item, onEdit }: Props) {
                     .filter((r) => r.enabled)
                     .map(
                       (r) =>
-                        `${t('editor.occupancy', { count: r.occupancy })}: ${r.beds ?? '—'} ${t('editor.beds')}`
+                        `${r.occupancy >= 2 ? t(`editor.roomTypes.${r.occupancy}`) : t('editor.occupancy', { count: r.occupancy })}${r.beds !== null ? ` · ${r.beds} ${t('editor.beds')}` : ''}`
                     )
                     .join(' / ')}
                 </p>
@@ -138,6 +141,10 @@ export function PackageDetails({ item, onEdit }: Props) {
                 s.transportMode ? t(`editor.transportModes.${s.transportMode}`) : '—'
             },
             { title: t('editor.serviceDescription'), dataIndex: 'description' },
+            {
+              title: t('editor.transportProvider'),
+              render: (_, s) => providers.find((p) => p.id === s.providerId)?.name || '—'
+            },
             {
               title: t('editor.included'),
               render: (_, s) => t(s.included ? 'editor.included' : 'editor.excluded')

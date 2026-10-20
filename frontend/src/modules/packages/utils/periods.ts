@@ -1,5 +1,6 @@
 import type { PackageStay, StayPeriod } from '../types/editor'
 import { createEntityId } from './domain'
+export const MAX_STAY_PERIODS = 3
 /** Returns stable legacy-compatible stay periods. @param stay - Stay stage. @returns Stored periods or the original single interval. */
 export function stayPeriods(stay: PackageStay): StayPeriod[] {
   return (
@@ -17,7 +18,7 @@ export function withPeriods(stay: PackageStay, periods: StayPeriod[]): PackageSt
 }
 /** Changes period count without reassigning retained identifiers. @param stay - Stay. @param count - Requested positive integer count. @returns Updated stay. */
 export function resizePeriods(stay: PackageStay, count: number): PackageStay {
-  if (!Number.isInteger(count) || count < 1 || count > 30) return stay
+  if (!Number.isInteger(count) || count < 1 || count > MAX_STAY_PERIODS) return stay
   const periods = [...stayPeriods(stay)]
   while (periods.length < count)
     periods.push({ id: createEntityId('period'), checkIn: '', checkOut: '' })

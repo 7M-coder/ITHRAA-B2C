@@ -19,7 +19,10 @@ export function upgradePackage(
     checkIn: s.checkIn,
     checkOut: s.checkOut,
     notes: s.amenities,
-    rooms: newStay().rooms.map((r) => ({
+    rooms: [
+      ...(s.peoplePerRoom === 1 ? [{ ...newStay().rooms[0], occupancy: 1 }] : []),
+      ...newStay().rooms
+    ].map((r) => ({
       ...r,
       enabled:
         s.peoplePerRoom !== null && [1, 2, 3, 4].includes(s.peoplePerRoom)

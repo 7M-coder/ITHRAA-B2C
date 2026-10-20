@@ -71,16 +71,16 @@ describe('package financial model', () => {
   it('distinguishes missing amounts from explicit zero', () => {
     const p = completePackage(),
       e = editorData(p)
-    e.stays[0].rooms[1].amount = null
+    e.stays[0].rooms.find((r) => r.occupancy === 2)!.amount = null
     expect(optionCost(p, e.options[0]).total).toBeNull()
-    e.stays[0].rooms[1].amount = 0
+    e.stays[0].rooms.find((r) => r.occupancy === 2)!.amount = 0
     expect(optionCost(p, e.options[0]).total).toBe(200)
     e.options[0].approvedAmount = 0
     expect(readiness(p)).toEqual([])
   })
   it.each([-1, NaN, Infinity])('rejects invalid amount %s', (amount) => {
     const p = completePackage()
-    editorData(p).stays[0].rooms[1].amount = amount
+    editorData(p).stays[0].rooms.find((r) => r.occupancy === 2)!.amount = amount
     expect(packageSchema.safeParse(p).success).toBe(false)
     expect(optionCost(p, editorData(p).options[0]).total).toBeNull()
   })
@@ -145,7 +145,7 @@ describe('package financial model', () => {
     e.stays[0].checkOut = '2027-05-10'
     expect(packageSchema.safeParse(p).success).toBe(false)
     e.stays[0].checkOut = '2027-05-14'
-    e.stays[0].rooms[1].beds = 44
+    e.stays[0].rooms.find((r) => r.occupancy === 2)!.beds = 44
     expect(packageSchema.safeParse(p).success).toBe(true)
     expect(packageWarnings(p)).toEqual(expect.arrayContaining(['overlap', 'beds']))
     e.stays[0].checkIn = '2027-05-09'

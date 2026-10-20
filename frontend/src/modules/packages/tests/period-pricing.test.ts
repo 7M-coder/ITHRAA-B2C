@@ -85,7 +85,7 @@ describe('bed pricing and stay periods', () => {
     const result = optionCost(p, e.options[0])
     expect(result.total).toBe(625)
     expect(result.lines[0]).toMatchObject({ base: 500, additions: 125, tax: 'included' })
-    e.stays[0].rooms[2].amount = 0.333
+    e.stays[0].rooms.find((r) => r.occupancy === 3)!.amount = 0.333
     expect(optionCost(p, e.options[0]).total).toBe(2.08)
   })
   it('retains old cost bases and avoids adding charges twice to inclusive values', () => {

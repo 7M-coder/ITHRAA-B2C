@@ -75,6 +75,19 @@ export const usePackageStore = create<PackageStore>()(
         const state = get()
         const provider = state.providers.find((entry) => entry.id === item.providerId)
         if (item.providerId && !provider) throw new Error('missingProvider')
+        for (const service of item.editor.services) {
+          if (!service.providerId) continue
+          const selected = state.providers.find((p) => p.id === service.providerId)
+          const previous = state.packages
+            .find((p) => p.id === item.id)
+            ?.editor?.services.find((s) => s.id === service.id)
+          if (
+            !selected ||
+            (previous?.providerId !== service.providerId &&
+              (!selected.active || !selected.categories.includes('transport')))
+          )
+            throw new Error('invalidTransportProvider')
+        }
         if (
           state.blocks.some(
             (block) =>

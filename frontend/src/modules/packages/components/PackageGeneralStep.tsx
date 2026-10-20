@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { EditorStepProps } from '../types/editorProps'
 import { editorData } from '../utils/finance'
 import { PackageDateInput } from './PackageDateInput'
-import { packageLongTextSchema } from '../validations/schemas'
+import { PackageDescriptionEditor } from './PackageDescriptionEditor'
 import { SEASON_START, SEASON_END, earliestDate, latestDate } from '../utils/dates'
 import { EditorField } from './EditorField'
 /** Edits general package fields without requiring complete data for a draft. @param props - Controlled package. @returns General fields. */
@@ -31,7 +31,15 @@ export function PackageGeneralStep({ item, onChange }: EditorStepProps) {
             aria-label={t('editor.category')}
             value={e.category || undefined}
             onChange={(category) => onChange({ ...item, editor: { ...e, category } })}
-            options={['economy', 'standard', 'premium', 'luxury'].map((value) => ({
+            options={[
+              'luxury',
+              'luxury_transitional',
+              'premium',
+              'premium_transitional',
+              'basic',
+              'basic_transitional',
+              ...(['economy', 'standard'].includes(e.category) ? [e.category] : [])
+            ].map((value) => ({
               value,
               label: t(`editor.categories.${value}`)
             }))}
@@ -66,14 +74,7 @@ export function PackageGeneralStep({ item, onChange }: EditorStepProps) {
           />
         </EditorField>
       </div>
-      <EditorField label={t('fields.description')} text schema={packageLongTextSchema}>
-        <Input.TextArea
-          rows={3}
-          aria-label={t('fields.description')}
-          value={item.description}
-          onChange={(v) => onChange({ ...item, description: v.target.value })}
-        />
-      </EditorField>
+      <PackageDescriptionEditor item={item} onChange={onChange} />
       {e.needsReview && (
         <Checkbox
           checked={!e.needsReview}

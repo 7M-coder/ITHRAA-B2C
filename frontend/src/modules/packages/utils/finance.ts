@@ -35,7 +35,7 @@ export function newStay(): PackageStay {
     checkOut: '',
     contractRef: '',
     notes: '',
-    rooms: [1, 2, 3, 4].map((occupancy) => ({
+    rooms: [2, 3, 4].map((occupancy) => ({
       occupancy,
       enabled: occupancy === 4,
       beds: null,

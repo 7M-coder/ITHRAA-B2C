@@ -1,8 +1,8 @@
-import { App, InputNumber } from 'antd'
+import { Alert, App, InputNumber } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PackageStay } from '../types/editor'
 import type { HajjPackage } from '../types/domain'
-import { stayPeriods, resizePeriods, withPeriods } from '../utils/periods'
+import { stayPeriods, resizePeriods, withPeriods, MAX_STAY_PERIODS } from '../utils/periods'
 import { stayNights, stayPeriodNights } from '../utils/finance'
 import { SEASON_START, SEASON_END, earliestDate, latestDate, shiftDate } from '../utils/dates'
 import { PackageDateInput } from './PackageDateInput'
@@ -18,7 +18,7 @@ export function PackageStayPeriods({ item, stay, onChange }: Props) {
   const { modal } = App.useApp()
   const periods = stayPeriods(stay)
   const resize = (count: number | null) => {
-    if (count === null || !Number.isInteger(count) || count < 1 || count > 30) return
+    if (count === null || !Number.isInteger(count) || count < 1 || count > MAX_STAY_PERIODS) return
     const apply = () => onChange(resizePeriods(stay, count))
     if (count < periods.length && periods.slice(count).some((p) => p.checkIn || p.checkOut))
       modal.confirm({
@@ -34,11 +34,16 @@ export function PackageStayPeriods({ item, stay, onChange }: Props) {
     <div className="my-5 space-y-4">
       <EditorField label={t('editor.periodCount')}>
         <InputNumber
+          min={1}
+          max={MAX_STAY_PERIODS}
           aria-label={t('editor.periodCount')}
           value={periods.length}
           onChange={resize}
         />
       </EditorField>
+      {periods.length > MAX_STAY_PERIODS && (
+        <Alert type="warning" showIcon message={t('editor.validation.periodLimit')} />
+      )}
       <p className="text-sm text-muted">{t('editor.periodsHelp')}</p>
       {periods.map((period, index) => {
         const nights = stayNights(period.checkIn, period.checkOut)

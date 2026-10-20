@@ -7,7 +7,7 @@ import { transportModes } from '../utils/transport'
 import { createEntityId } from '../utils/domain'
 import { EditorField } from './EditorField'
 /** Records only intercity and Mashair transport; retained legacy service records stay read-only. @param props - Controlled package. @returns Transport fields. */
-export function PackageServicesStep({ item, onChange }: EditorStepProps) {
+export function PackageServicesStep({ item, onChange, providers = [] }: EditorStepProps) {
   const { t } = useTranslation('packages')
   const e = editorData(item)
   const services = e.services.filter((s) => s.category === 'transportation')
@@ -49,7 +49,7 @@ export function PackageServicesStep({ item, onChange }: EditorStepProps) {
                     label: t(`editor.transportTypes.${value}`)
                   }))}
                   onChange={(transportType) =>
-                    update(s.id, { transportType, transportMode: undefined })
+                    update(s.id, { transportType, transportMode: undefined, providerId: undefined })
                   }
                 />
               </EditorField>
@@ -61,10 +61,39 @@ export function PackageServicesStep({ item, onChange }: EditorStepProps) {
                   options={(s.transportType ? transportModes[s.transportType] : []).map(
                     (value) => ({ value, label: t(`editor.transportModes.${value}`) })
                   )}
-                  onChange={(transportMode) => update(s.id, { transportMode })}
+                  onChange={(transportMode) =>
+                    update(s.id, { transportMode, providerId: undefined })
+                  }
                 />
               </EditorField>
+              {s.transportMode && (
+                <EditorField label={t('editor.transportProvider')}>
+                  <Select
+                    aria-label={t('editor.transportProvider')}
+                    showSearch
+                    optionFilterProp="label"
+                    allowClear
+                    value={s.providerId}
+                    placeholder={t('editor.chooseTransportProvider')}
+                    notFoundContent={t('editor.noTransportProviders')}
+                    options={providers
+                      .filter(
+                        (p) =>
+                          (p.active && p.categories.includes('transport')) || p.id === s.providerId
+                      )
+                      .map((p) => ({
+                        value: p.id,
+                        label: p.name,
+                        disabled: !p.active || !p.categories.includes('transport')
+                      }))}
+                    onChange={(providerId) => update(s.id, { providerId })}
+                  />
+                </EditorField>
+              )}
             </div>
+            {s.transportMode && (
+              <p className="text-sm text-muted">{t('editor.transportProvidersHint')}</p>
+            )}
             <Checkbox
               className="mb-4"
               checked={s.included}

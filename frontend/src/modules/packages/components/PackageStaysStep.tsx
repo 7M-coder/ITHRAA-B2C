@@ -1,4 +1,4 @@
-import { App, Button, Card, Checkbox, Empty, Form, Input, InputNumber, Select } from 'antd'
+import { App, Button, Card, Checkbox, Empty, Form, Input, Select } from 'antd'
 import { ArrowUpOutlined, ArrowDownOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { EditorStepProps } from '../types/editorProps'
@@ -119,57 +119,44 @@ export function PackageStaysStep({ item, onChange }: EditorStepProps) {
             </div>
             <PackageStayPeriods item={item} stay={s} onChange={(stay) => update(s.id, stay)} />
             <h4 className="mb-3">{t('editor.peoplePerRoom')}</h4>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {s.rooms.map((room) => (
-                <div key={room.occupancy} className="rounded-lg border border-line p-3">
-                  <Checkbox
-                    checked={room.enabled}
-                    onChange={(v) => {
-                      const rooms = s.rooms.map((r) =>
-                        r.occupancy === room.occupancy ? { ...r, enabled: v.target.checked } : r
-                      )
-                      const options = e.options.map((o) => ({
-                        ...o,
-                        needsReview:
-                          o.needsReview ||
-                          (!v.target.checked && o.selections[s.id] === room.occupancy),
-                        selections: Object.fromEntries(
-                          Object.entries(o.selections).filter(
-                            ([id, n]) => id !== s.id || n !== room.occupancy || v.target.checked
-                          )
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {s.rooms
+                .filter((room) => room.occupancy >= 2 || room.enabled)
+                .map((room) => (
+                  <div key={room.occupancy} className="rounded-lg border border-line p-3">
+                    <Checkbox
+                      checked={room.enabled}
+                      onChange={(v) => {
+                        const rooms = s.rooms.map((r) =>
+                          r.occupancy === room.occupancy ? { ...r, enabled: v.target.checked } : r
                         )
-                      }))
-                      onChange({
-                        ...item,
-                        editor: {
-                          ...e,
-                          stays: e.stays.map((x) => (x.id === s.id ? { ...s, rooms } : x)),
-                          options
-                        }
-                      })
-                    }}
-                  >
-                    {t('editor.occupancy', { count: room.occupancy })}
-                  </Checkbox>
-                  <EditorField label={t('editor.beds')}>
-                    <InputNumber
-                      changeOnBlur={false}
-                      aria-label={`${t('editor.beds')} ${room.occupancy}`}
-                      className="w-full!"
-                      disabled={!room.enabled}
-
-                      value={room.beds}
-                      onChange={(beds) =>
-                        update(s.id, {
-                          rooms: s.rooms.map((r) =>
-                            r.occupancy === room.occupancy ? { ...r, beds } : r
+                        const options = e.options.map((o) => ({
+                          ...o,
+                          needsReview:
+                            o.needsReview ||
+                            (!v.target.checked && o.selections[s.id] === room.occupancy),
+                          selections: Object.fromEntries(
+                            Object.entries(o.selections).filter(
+                              ([id, n]) => id !== s.id || n !== room.occupancy || v.target.checked
+                            )
                           )
+                        }))
+                        onChange({
+                          ...item,
+                          editor: {
+                            ...e,
+                            stays: e.stays.map((x) => (x.id === s.id ? { ...s, rooms } : x)),
+                            options
+                          }
                         })
-                      }
-                    />
-                  </EditorField>
-                </div>
-              ))}
+                      }}
+                    >
+                      {room.occupancy === 1
+                        ? t('editor.occupancy', { count: 1 })
+                        : t(`editor.roomTypes.${room.occupancy}`)}
+                    </Checkbox>
+                  </div>
+                ))}
             </div>
             <EditorField label={t('editor.notes')} text>
               <Input.TextArea
