@@ -1,0 +1,28 @@
+export const NATIONALITY_CODES = [
+  'SA',
+  'EG',
+  'YE',
+  'SD',
+  'JO',
+  'PS',
+  'SY',
+  'LB',
+  'IQ',
+  'PK',
+  'IN',
+  'BD',
+  'NP',
+  'PH',
+  'ID',
+  'LK',
+  'AF',
+  'ET',
+  'ER',
+  'SO',
+  'MA',
+  'TN',
+  'DZ',
+  'TR',
+  'OTHER'
+] as const
+export type NationalityCode = (typeof NATIONALITY_CODES)[number]

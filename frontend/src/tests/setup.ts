@@ -5,6 +5,8 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import en from '../../public/locales/en/common.json'
 import ar from '../../public/locales/ar/common.json'
+import employeesEn from '../../public/locales/en/employees.json'
+import employeesAr from '../../public/locales/ar/employees.json'
 import packagesEn from '../../public/locales/en/packages.json'
 import packagesAr from '../../public/locales/ar/packages.json'
 // Node 25 exposes a partial global localStorage that shadows jsdom's Storage.
@@ -32,8 +34,11 @@ Object.defineProperty(window, 'localStorage', { configurable: true, value: jsdom
 await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
-  resources: { en: { common: en, packages: packagesEn }, ar: { common: ar, packages: packagesAr } },
-  ns: ['common', 'packages'],
+  resources: {
+    en: { common: en, packages: packagesEn, employees: employeesEn },
+    ar: { common: ar, packages: packagesAr, employees: employeesAr }
+  },
+  ns: ['common', 'packages', 'employees'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }

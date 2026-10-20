@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Space, Table, Tabs, Tag } from 'antd'
+import { App, Button, Card, Input, Select, Space, Table, Tabs } from 'antd'
 import {
   EditOutlined,
   EyeOutlined,
@@ -19,7 +19,8 @@ import type {
 import { usePackageStore, usePackageStorageStatus } from '../hooks/usePackageStore'
 import { getPackageDuration } from '../utils/domain'
 import { PageHeader } from '@/modules/core/components/PageHeader'
-import { PackageForm } from '../components/PackageForm'
+import { useNavigate } from 'react-router-dom'
+import { financialSummary } from '../utils/finance'
 import { ProviderForm } from '../components/ProviderForm'
 import { BlockForm } from '../components/BlockForm'
 import { PackagePreview } from '../components/PackagePreview'
@@ -27,12 +28,12 @@ import { PackageComparison } from '../components/PackageComparison'
 
 /** Manages local B2C package templates, providers, and compatible operations blocks. @returns Package management page. */
 export default function PackagesPage() {
-  const { t } = useTranslation('packages')
+  const { t, i18n } = useTranslation('packages')
+  const navigate = useNavigate()
   const { message, modal } = App.useApp()
   const packages = usePackageStore((state) => state.packages)
   const providers = usePackageStore((state) => state.providers)
   const blocks = usePackageStore((state) => state.blocks)
-  const savePackage = usePackageStore((state) => state.savePackage)
   const archivePackage = usePackageStore((state) => state.archivePackage)
   const saveProvider = usePackageStore((state) => state.saveProvider)
   const saveBlock = usePackageStore((state) => state.saveBlock)
@@ -40,14 +41,10 @@ export default function PackagesPage() {
   const [activeTab, setActiveTab] = useState('packages')
   const [search, setSearch] = useState('')
   const [seasonFilter, setSeasonFilter] = useState<string>()
-  const [typeFilter, setTypeFilter] = useState<string>()
-  const [providerFilter, setProviderFilter] = useState<string>()
   const [statusFilter, setStatusFilter] = useState<string>()
   const [selectedIds, setSelectedIds] = useState<React.Key[]>([])
-  const [packageDialog, setPackageDialog] = useState(false)
   const [providerDialog, setProviderDialog] = useState(false)
   const [blockDialog, setBlockDialog] = useState(false)
-  const [packageToEdit, setPackageToEdit] = useState<HajjPackage>()
   const [providerToEdit, setProviderToEdit] = useState<ServiceProvider>()
   const [blockToEdit, setBlockToEdit] = useState<OperationsBlock>()
   const [preview, setPreview] = useState<HajjPackage>()
@@ -63,26 +60,15 @@ export default function PackagesPage() {
               .toLowerCase()
               .includes(search.toLowerCase())) &&
           (!seasonFilter || item.season === seasonFilter) &&
-          (!typeFilter || item.pilgrimType === typeFilter) &&
-          (!providerFilter || item.providerId === providerFilter) &&
           (!statusFilter || item.status === statusFilter)
       ),
-    [packages, search, seasonFilter, typeFilter, providerFilter, statusFilter]
+    [packages, search, seasonFilter, statusFilter]
   )
 
   /** Displays a localized message for a failed local store action. @param error - Action error. @returns Nothing. */
   const notifyError = (error: unknown) => {
     const key = error instanceof Error ? error.message : 'invalid'
     void message.error(t(`errors.${key}`, { defaultValue: t('errors.invalid') }))
-  }
-  const submitPackage = (item: HajjPackage) => {
-    try {
-      savePackage(item)
-      setPackageDialog(false)
-      void message.success(t('messages.saved'))
-    } catch (error) {
-      notifyError(error)
-    }
   }
   const submitProvider = (item: ServiceProvider) => {
     try {
@@ -102,10 +88,10 @@ export default function PackagesPage() {
       notifyError(error)
     }
   }
-  const startPackage = (item?: HajjPackage) => {
-    setPackageToEdit(item)
-    setPackageDialog(true)
-  }
+  const startPackage = (item?: HajjPackage) =>
+    navigate(
+      `/${i18n.language.startsWith('ar') ? 'ar' : 'en'}/packages/${item ? `${item.id}/edit` : 'new'}`
+    )
   const startProvider = (item?: ServiceProvider) => {
     setProviderToEdit(item)
     setProviderDialog(true)
@@ -134,23 +120,12 @@ export default function PackagesPage() {
 
   const packageColumns: ColumnsType<HajjPackage> = [
     { title: t('fields.name'), dataIndex: 'name', key: 'name', fixed: 'left', width: 190 },
-    {
-      title: t('fields.pilgrimType'),
-      dataIndex: 'pilgrimType',
-      key: 'pilgrimType',
-      render: (value: string) => t(`values.${value}`)
-    },
     { title: t('fields.season'), dataIndex: 'season', key: 'season' },
+
     {
-      title: t('fields.provider'),
-      key: 'provider',
-      render: (_, item) =>
-        providers.find((provider) => provider.id === item.providerId)?.name ?? '—'
-    },
-    {
-      title: t('fields.price'),
+      title: t('editor.financialSummary'),
       key: 'price',
-      render: (_, item) => `${item.price.toLocaleString()} ${item.currency}`
+      render: (_, item) => financialSummary(item, t)
     },
     {
       title: t('fields.duration'),
@@ -161,11 +136,7 @@ export default function PackagesPage() {
       title: t('fields.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (value: PackageStatus) => (
-        <Tag color={value === 'available' ? 'green' : value === 'paused' ? 'orange' : 'default'}>
-          {t(`values.${value}`)}
-        </Tag>
-      )
+      render: (value: PackageStatus) => <span>{t(`values.${value}`)}</span>
     },
     {
       title: t('table.blocks'),
@@ -221,11 +192,7 @@ export default function PackagesPage() {
       title: t('provider.active'),
       dataIndex: 'active',
       key: 'active',
-      render: (active: boolean) => (
-        <Tag color={active ? 'green' : 'default'}>
-          {t(active ? 'values.active' : 'values.inactive')}
-        </Tag>
-      )
+      render: (active: boolean) => <span>{t(active ? 'values.active' : 'values.inactive')}</span>
     },
     {
       title: t('table.actions'),
@@ -241,12 +208,6 @@ export default function PackagesPage() {
     { title: t('block.code'), dataIndex: 'code', key: 'code' },
     { title: t('block.name'), dataIndex: 'name', key: 'name' },
     { title: t('fields.season'), dataIndex: 'season', key: 'season' },
-    {
-      title: t('fields.pilgrimType'),
-      dataIndex: 'pilgrimType',
-      key: 'pilgrimType',
-      render: (value: string) => t(`values.${value}`)
-    },
     {
       title: t('block.package'),
       key: 'package',
@@ -307,28 +268,6 @@ export default function PackagesPage() {
                     options={[...new Set(packages.map((item) => item.season))].map((value) => ({
                       value,
                       label: value
-                    }))}
-                  />
-                  <Select
-                    className="min-w-36"
-                    allowClear
-                    placeholder={t('fields.pilgrimType')}
-                    value={typeFilter}
-                    onChange={setTypeFilter}
-                    options={(['domestic', 'international'] as const).map((value) => ({
-                      value,
-                      label: t(`values.${value}`)
-                    }))}
-                  />
-                  <Select
-                    className="min-w-44"
-                    allowClear
-                    placeholder={t('fields.provider')}
-                    value={providerFilter}
-                    onChange={setProviderFilter}
-                    options={providers.map((provider) => ({
-                      value: provider.id,
-                      label: provider.name
                     }))}
                   />
                   <Select
@@ -412,13 +351,6 @@ export default function PackagesPage() {
             )
           }
         ]}
-      />
-      <PackageForm
-        open={packageDialog}
-        initial={packageToEdit}
-        providers={providers}
-        onCancel={() => setPackageDialog(false)}
-        onSave={submitPackage}
       />
       <ProviderForm
         open={providerDialog}

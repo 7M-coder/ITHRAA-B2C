@@ -6,6 +6,7 @@ import EmployeesPage from '@/modules/employees/pages/EmployeesPage'
 import PayrollPage from '@/modules/payroll/pages/PayrollPage'
 import CustodyPage from '@/modules/custody/pages/CustodyPage'
 import ClearancePage from '@/modules/clearance/pages/ClearancePage'
+import PackageEditorPage from '@/modules/packages/pages/PackageEditorPage'
 import PackagesPage from '@/modules/packages/pages/PackagesPage'
 /** Defines localized routes and redirects unknown paths to the dashboard. @returns Route tree. */
 export function AppRoutes() {
@@ -19,6 +20,8 @@ export function AppRoutes() {
           <Route path="custody" element={<CustodyPage />} />
           <Route path="clearance" element={<ClearancePage />} />
           <Route path="packages" element={<PackagesPage />} />
+          <Route path="packages/new" element={<PackageEditorPage key="new" />} />
+          <Route path="packages/:id/edit" element={<PackageEditorPage key="edit" />} />
           <Route path="*" element={<Navigate to={`/${language}`} replace />} />
         </Route>
       ))}

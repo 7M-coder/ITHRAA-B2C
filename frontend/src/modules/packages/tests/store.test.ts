@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { completePackage } from './fixtures'
+import { editorData } from '../utils/finance'
+import { migratePackageState } from '../utils/migration'
 import { seedPackageData } from '../utils/seed'
 
 const KEY = 'ithraa-b2c-packages-v1'
@@ -42,7 +45,7 @@ describe('persisted package state', () => {
 
   it('creates a package with optional service sections omitted', async () => {
     const { usePackageStore } = await import('../hooks/usePackageStore')
-    const source = seedPackageData().packages[0]
+    const source = usePackageStore.getState().packages[0]
     const created = { ...source, id: 'package-new', name: 'قالب جديد', services: {} }
     usePackageStore.getState().savePackage(created)
     expect(usePackageStore.getState().packages.find((item) => item.id === created.id)).toEqual(
@@ -58,9 +61,10 @@ describe('persisted package state', () => {
       code: 'D-02',
       name: 'بلوك ثان',
       season: '1448',
-      pilgrimType: 'domestic' as const,
+      pilgrimType: 'international' as const,
       packageId: 'package-demo-1'
     }
+    state.savePackage({ ...completePackage(), id: 'package-demo-1' })
     state.saveBlock(secondBlock)
     expect(
       usePackageStore.getState().blocks.find((block) => block.id === 'block-new')?.packageId
@@ -70,7 +74,7 @@ describe('persisted package state', () => {
         ...secondBlock,
         id: 'block-invalid',
         code: 'I-02',
-        pilgrimType: 'international'
+        season: '1449'
       })
     ).toThrow('packageMismatch')
   })
@@ -92,4 +96,152 @@ describe('persisted package state', () => {
     expect(usePackageStore.getState().packages).toEqual([])
     expect(seedPackageData().providers).toHaveLength(2)
   })
+})
+
+it('migrates v1 without changing IDs, provider relationships or historical block links', async () => {
+  const old = seedPackageData()
+  localStorage.setItem(KEY, JSON.stringify({ state: old, version: 1 }))
+  const { usePackageStore } = await import('../hooks/usePackageStore')
+  const current = usePackageStore.getState()
+  expect(current.packages[0].id).toBe(old.packages[0].id)
+  expect(current.packages[0].status).toBe('draft')
+  expect(current.blocks).toEqual(old.blocks)
+  expect(current.providers).toEqual(old.providers)
+  expect(editorData(current.packages[0]).legacyPrice).toBe(old.packages[0].price)
+  expect(current.packages[0].services).toEqual(old.packages[0].services)
+  expect(() =>
+    current.saveBlock({
+      id: 'new',
+      code: 'NEW',
+      name: 'New block',
+      season: '1448',
+      pilgrimType: 'international',
+      packageId: old.packages[0].id
+    })
+  ).toThrow('packageUnavailable')
+  current.saveBlock({ ...current.blocks[0], name: 'Existing assignment preserved' })
+  expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(4)
+})
+it('retains both financial modes and stable references after a reload', async () => {
+  let mod = await import('../hooks/usePackageStore')
+  const p = completePackage()
+  p.status = 'draft'
+  editorData(p).mode = 'cost_draft'
+  mod.usePackageStore.getState().savePackage(p)
+  vi.resetModules()
+  mod = await import('../hooks/usePackageStore')
+  const saved = mod.usePackageStore.getState().packages.find((x) => x.id === p.id)!
+  expect(editorData(saved)).toEqual(editorData(p))
+  editorData(saved).mode = 'approved_price'
+  mod.usePackageStore.getState().savePackage(saved)
+  expect(
+    editorData(mod.usePackageStore.getState().packages.find((x) => x.id === p.id)!).options[0]
+      .approvedAmount
+  ).toBe(1200)
+})
+it('preserves unsupported future-version storage', async () => {
+  const raw = JSON.stringify({ version: 99, state: seedPackageData() })
+  localStorage.setItem(KEY, raw)
+  const { usePackageStore, usePackageStorageStatus } = await import('../hooks/usePackageStore')
+  usePackageStore.getState().archivePackage('package-demo-1')
+  expect(usePackageStorageStatus.getState().error).toBe(true)
+  expect(localStorage.getItem(KEY)).toBe(raw)
+})
+it('reports quota failures without replacing the saved data', async () => {
+  const { usePackageStore, usePackageStorageStatus } = await import('../hooks/usePackageStore')
+  const raw = localStorage.getItem(KEY)
+  const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('QuotaExceededError')
+  })
+  try {
+    usePackageStore.getState().archivePackage('package-demo-1')
+    expect(usePackageStorageStatus.getState().error).toBe(true)
+    expect(localStorage.getItem(KEY)).toBe(raw)
+  } finally {
+    spy.mockRestore()
+  }
+})
+it('rejects broken relationships rather than guessing their meaning', () => {
+  const old = seedPackageData()
+  old.blocks[0].packageId = 'missing'
+  expect(() => migratePackageState(old, 1)).toThrow()
+})
+
+it.each([1, 2])(
+  'migrates domestic records in version %s to international without losing details or links',
+  async (version) => {
+    const seed = seedPackageData()
+    const packages =
+      version === 1
+        ? seed.packages
+        : seed.packages.map((p) => ({
+            ...p,
+            editor: { ...editorData(completePackage()), needsReview: true },
+            status: 'draft' as const
+          }))
+    const old = {
+      ...seed,
+      packages: packages.map((p) => ({ ...p, pilgrimType: 'domestic' })),
+      blocks: seed.blocks.map((b) => ({ ...b, pilgrimType: 'domestic' }))
+    }
+    localStorage.setItem(KEY, JSON.stringify({ state: old, version }))
+    const { usePackageStore, usePackageStorageStatus } = await import('../hooks/usePackageStore')
+    const current = usePackageStore.getState()
+    expect(usePackageStorageStatus.getState().error).toBe(false)
+    expect(current.packages.every((p) => p.pilgrimType === 'international')).toBe(true)
+    expect(current.blocks.every((b) => b.pilgrimType === 'international')).toBe(true)
+    expect(current.packages.map((p) => p.id)).toEqual(old.packages.map((p) => p.id))
+    expect(current.blocks.map((b) => b.packageId)).toEqual(old.blocks.map((b) => b.packageId))
+    expect(current.providers).toEqual(old.providers)
+    expect(current.packages[0].services).toEqual(old.packages[0].services)
+    if (version === 2) expect(current.packages[0].editor).toEqual(old.packages[0].editor)
+    expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(4)
+  }
+)
+
+it('persists multiple periods, transport selections and bed-night charges across reloads', async () => {
+  const { withPeriods } = await import('../utils/periods')
+  const { optionCost } = await import('../utils/finance')
+  let mod = await import('../hooks/usePackageStore')
+  const p = completePackage()
+  p.status = 'draft'
+  p.providerId = ''
+  const e = editorData(p)
+  e.mode = 'cost_draft'
+  e.stays = [
+    withPeriods(
+      {
+        ...e.stays[0],
+        rooms: e.stays[0].rooms.map((room) => ({
+          ...room,
+          basis: 'bed_night',
+          amount: 100,
+          tax: 'excluded'
+        }))
+      },
+      [
+        { id: 'period-one', checkIn: '2027-05-10', checkOut: '2027-05-12' },
+        { id: 'period-two', checkIn: '2027-05-13', checkOut: '2027-05-15' },
+        { id: 'period-three', checkIn: '2027-05-17', checkOut: '2027-05-20' }
+      ]
+    )
+  ]
+  e.options[0].selections = { 'stay-a': 2 }
+  e.services = [
+    {
+      id: 'transport-one',
+      category: 'transportation',
+      transportType: 'intercity',
+      transportMode: 'haramain_train',
+      description: 'Between cities',
+      included: true
+    }
+  ]
+  mod.usePackageStore.getState().savePackage(p)
+  vi.resetModules()
+  mod = await import('../hooks/usePackageStore')
+  const saved = mod.usePackageStore.getState().packages.find((item) => item.id === p.id)!
+  expect(saved.editor).toEqual(e)
+  expect(saved.providerId).toBe('')
+  expect(optionCost(saved, editorData(saved).options[0]).total).toBe(875)
 })

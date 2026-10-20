@@ -22,8 +22,8 @@ export function seedPackageData(): PackageDemoData {
       {
         id: 'package-demo-1',
         name: 'باقة ضيافة مكة',
-        description: 'نموذج تجريبي لباقة حجاج الداخل.',
-        pilgrimType: 'domestic',
+        description: 'نموذج تجريبي لباقة حجاج الخارج.',
+        pilgrimType: 'international',
         season: '1448',
         providerId: 'provider-demo-1',
         startDate: '2027-05-10',
@@ -71,7 +71,7 @@ export function seedPackageData(): PackageDemoData {
         startDate: '2027-05-08',
         endDate: '2027-05-22',
         price: 3200,
-        currency: 'USD',
+        currency: 'SAR',
         bookingPolicy: '',
         cancellationPolicy: '',
         bookingChannel: '',
@@ -106,7 +106,7 @@ export function seedPackageData(): PackageDemoData {
         code: 'D-01',
         name: 'بلوك مكة التجريبي',
         season: '1448',
-        pilgrimType: 'domestic',
+        pilgrimType: 'international',
         packageId: 'package-demo-1'
       },
       {

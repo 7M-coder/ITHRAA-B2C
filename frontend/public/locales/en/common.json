@@ -148,5 +148,7 @@
   "recordCount": "{{count}} records",
   "today": "Today",
   "overviewLabel": "AT A GLANCE",
-  "notSaved": "Local storage needs attention"
+  "notSaved": "Local storage needs attention",
+  "phoneError": "Enter a Saudi mobile as 05xxxxxxxx or +9665xxxxxxxx",
+  "emailError": "Enter a valid email address"
 }

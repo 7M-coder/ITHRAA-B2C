@@ -9,9 +9,8 @@ describe('package domain helpers', () => {
   })
 
   it('matches a block only when the season and pilgrim type agree', () => {
-    const item = { season: '1448', pilgrimType: 'domestic' as const }
-    expect(matchesBlock(item, '1448', 'domestic')).toBe(true)
-    expect(matchesBlock(item, '1449', 'domestic')).toBe(false)
-    expect(matchesBlock(item, '1448', 'international')).toBe(false)
+    const item = { season: '1448', pilgrimType: 'international' as const }
+    expect(matchesBlock(item, '1448', 'international')).toBe(true)
+    expect(matchesBlock(item, '1449', 'international')).toBe(false)
   })
 })

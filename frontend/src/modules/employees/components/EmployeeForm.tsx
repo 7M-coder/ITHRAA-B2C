@@ -3,7 +3,9 @@ import { App, Form, Input, InputNumber, Modal, Select, Divider } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { Employee } from '../../core/types/domain'
 import { useDemoStore } from '../../core/hooks/useDemoStore'
-import { employeeSchema, fieldRule } from '../../core/validations/schemas'
+import { employeeSchema, employeeCreateSchema, fieldRule } from '../../core/validations/schemas'
+import { NATIONALITY_CODES } from '../types/nationality'
+import { normalizeEmployee } from '../utils/profile'
 interface Props {
   open: boolean
   employee?: Employee
@@ -13,6 +15,7 @@ interface Props {
 export function EmployeeForm({ open, employee, onClose }: Props) {
   const { t } = useTranslation(['employees', 'common'])
   const [form] = Form.useForm<Employee>()
+  const nationalityCode = Form.useWatch('nationalityCode', form)
   const save = useDemoStore((s) => s.saveEmployee)
   const { message } = App.useApp()
   const fields = employeeSchema.innerType().shape
@@ -20,23 +23,32 @@ export function EmployeeForm({ open, employee, onClose }: Props) {
     if (open) {
       form.resetFields()
       form.setFieldsValue(
-        employee || {
-          nationality: 'Saudi',
-          gosiRate: 9.75,
-          basicSalary: 0,
-          housingAllowance: 0,
-          transportAllowance: 0,
-          employmentStatus: 'Active',
-          uncompensatedLeaveDays: 0
-        }
+        employee
+          ? normalizeEmployee(employee)
+          : {
+              nationality: 'Saudi',
+              nationalityCode: 'SA',
+              phone: '',
+              email: '',
+              department: '',
+              startDate: '',
+              gosiRate: 9.75,
+              basicSalary: 0,
+              housingAllowance: 0,
+              transportAllowance: 0,
+              employmentStatus: 'Active',
+              uncompensatedLeaveDays: 0
+            }
       )
     }
   }, [open, employee, form])
   const submit = () => {
-    const result = employeeSchema.safeParse({
-      ...form.getFieldsValue(true),
-      id: employee?.id || crypto.randomUUID()
-    })
+    const result = (employee ? employeeSchema : employeeCreateSchema).safeParse(
+      normalizeEmployee({
+        ...form.getFieldsValue(true),
+        id: employee?.id || crypto.randomUUID()
+      })
+    )
     if (!result.success) {
       form.setFields(
         result.error.issues.map((issue) => ({
@@ -44,6 +56,9 @@ export function EmployeeForm({ open, employee, onClose }: Props) {
           errors: [
             t(
               [
+                'required',
+                'phoneError',
+                'emailError',
                 'nameError',
                 'idError',
                 'ibanError',
@@ -82,8 +97,14 @@ export function EmployeeForm({ open, employee, onClose }: Props) {
         form={form}
         onFinish={submit}
         onValuesChange={(changed) => {
-          if (!employee && changed.nationality)
-            form.setFieldValue('gosiRate', changed.nationality === 'Saudi' ? 9.75 : 0)
+          if (changed.nationalityCode) {
+            form.setFieldValue(
+              'nationality',
+              changed.nationalityCode === 'SA' ? 'Saudi' : 'NonSaudi'
+            )
+            if (!employee)
+              form.setFieldValue('gosiRate', changed.nationalityCode === 'SA' ? 9.75 : 0)
+          }
         }}
       >
         <Divider orientation="start">{t('personalDetails')}</Divider>
@@ -92,11 +113,57 @@ export function EmployeeForm({ open, employee, onClose }: Props) {
             <Input maxLength={100} />
           </Form.Item>
           <Form.Item
-            name="nationality"
+            name="nationalityCode"
             label={t('nationality')}
-            rules={[{ required: true, message: t('required') }]}
+            rules={[{ required: !employee, message: t('required') }]}
           >
-            <Select options={['Saudi', 'NonSaudi'].map((value) => ({ value, label: t(value) }))} />
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('unspecifiedNonSaudi')}
+              options={NATIONALITY_CODES.map((value) => ({
+                value,
+                label: t(`countries.${value}`)
+              }))}
+            />
+          </Form.Item>
+          {nationalityCode === 'OTHER' && (
+            <Form.Item
+              name="otherNationality"
+              label={t('otherNationality')}
+              rules={[
+                fieldRule(fields.otherNationality, t),
+                { required: true, whitespace: true, message: t('required') }
+              ]}
+            >
+              <Input maxLength={100} />
+            </Form.Item>
+          )}
+          <Form.Item name="phone" label={t('phone')} rules={[fieldRule(fields.phone, t)]}>
+            <Input dir="ltr" placeholder="+9665xxxxxxxx" />
+          </Form.Item>
+          <Form.Item name="email" label={t('email')} rules={[fieldRule(fields.email, t)]}>
+            <Input dir="ltr" />
+          </Form.Item>
+          <Form.Item
+            name="department"
+            label={t('department')}
+            rules={[
+              fieldRule(fields.department, t),
+              { required: !employee, whitespace: true, message: t('required') }
+            ]}
+          >
+            <Input maxLength={100} />
+          </Form.Item>
+          <Form.Item
+            name="startDate"
+            label={t('startDate')}
+            rules={[
+              fieldRule(fields.startDate, t),
+              { required: !employee, message: t('required') }
+            ]}
+          >
+            <Input type="date" />
           </Form.Item>
           <Form.Item
             name="nationalId"

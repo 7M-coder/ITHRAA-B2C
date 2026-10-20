@@ -26,6 +26,8 @@ it('creates an employee through validated form fields and persists the new recor
   fireEvent.change(screen.getByLabelText('Document expiry'), { target: { value: '2027-12-31' } })
   fireEvent.change(screen.getByLabelText('Job title'), { target: { value: 'Demo Coordinator' } })
   fireEvent.change(screen.getByLabelText('IBAN'), { target: { value: 'sa0000000000000000000099' } })
+  fireEvent.change(screen.getByLabelText('Department'), { target: { value: 'Operations' } })
+  fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2025-01-01' } })
   await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
   await waitFor(() => expect(useDemoStore.getState().employees).toHaveLength(9))
   expect(useDemoStore.getState().employees[8]).toMatchObject({
