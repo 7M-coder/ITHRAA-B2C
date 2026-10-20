@@ -10,6 +10,8 @@ import employeesEn from '../../public/locales/en/employees.json'
 import employeesAr from '../../public/locales/ar/employees.json'
 import packagesEn from '../../public/locales/en/packages.json'
 import packagesAr from '../../public/locales/ar/packages.json'
+import contractsEn from '../../public/locales/en/contracts.json'
+import contractsAr from '../../public/locales/ar/contracts.json'
 // React Router's Node Request requires signals from Node's AbortController.
 const nativeAbortController = transferableAbortController()
 vi.stubGlobal('AbortController', nativeAbortController.constructor)
@@ -40,10 +42,10 @@ await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
   resources: {
-    en: { common: en, packages: packagesEn, employees: employeesEn },
-    ar: { common: ar, packages: packagesAr, employees: employeesAr }
+    en: { common: en, packages: packagesEn, employees: employeesEn, contracts: contractsEn },
+    ar: { common: ar, packages: packagesAr, employees: employeesAr, contracts: contractsAr }
   },
-  ns: ['common', 'packages', 'employees'],
+  ns: ['common', 'packages', 'employees', 'contracts'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }

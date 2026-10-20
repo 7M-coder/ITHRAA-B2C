@@ -12,7 +12,7 @@ export function getThemeConfig(dark: boolean): ThemeConfig {
       fontFamily: 'var(--font-theme)',
       fontSize: 15,
       borderRadius: 12,
-      colorBgBase: dark ? '#141f23' : '#f6f8f9',
+      colorBgBase: dark ? '#141f23' : '#fcfaf8',
       colorBgContainer: dark ? '#1c2b30' : '#ffffff',
       colorText: dark ? '#e8f0f1' : '#23363b',
       colorTextSecondary: dark ? '#afc1c6' : '#6d7f85',
