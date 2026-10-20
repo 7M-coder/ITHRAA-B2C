@@ -149,5 +149,7 @@
   "recordCount": "{{count}} سجل",
   "today": "اليوم",
   "overviewLabel": "نظرة عامة",
-  "notSaved": "الحفظ المحلي يحتاج مراجعة"
+  "notSaved": "الحفظ المحلي يحتاج مراجعة",
+  "phoneError": "أدخل رقم جوال سعودي بصيغة 05xxxxxxxx أو +9665xxxxxxxx",
+  "emailError": "أدخل بريدًا إلكترونيًا صحيحًا"
 }

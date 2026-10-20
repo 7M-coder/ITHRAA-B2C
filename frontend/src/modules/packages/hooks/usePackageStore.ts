@@ -1,3 +1,4 @@
+import { migratePackageState, upgradePackage } from '../utils/migration'
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { z } from 'zod'
@@ -27,10 +28,7 @@ const packageStorage: StateStorage = {
       if (saved === null) return null
       try {
         const parsed = JSON.parse(saved) as { version?: unknown; state?: unknown }
-        if (parsed.version !== 1 || !packageDemoSchema.safeParse(parsed.state).success) {
-          storageBlocked = true
-          usePackageStorageStatus.setState({ error: true })
-        }
+        migratePackageState(parsed.state, Number(parsed.version))
       } catch {
         storageBlocked = true
         usePackageStorageStatus.setState({ error: true })
@@ -46,6 +44,7 @@ const packageStorage: StateStorage = {
     if (storageBlocked) return
     try {
       localStorage.setItem(key, value)
+      usePackageStorageStatus.setState({ error: false })
     } catch {
       usePackageStorageStatus.setState({ error: true })
     }
@@ -70,13 +69,12 @@ interface PackageStore extends PackageDemoData {
 export const usePackageStore = create<PackageStore>()(
   persist(
     (set, get) => ({
-      ...seedPackageData(),
+      ...{ ...seedPackageData(), packages: seedPackageData().packages.map(upgradePackage) },
       savePackage: (candidate) => {
         const item = packageSchema.parse(candidate)
         const state = get()
         const provider = state.providers.find((entry) => entry.id === item.providerId)
-        if (!provider) throw new Error('missingProvider')
-        if (item.status === 'available' && !provider.active) throw new Error('providerInactive')
+        if (item.providerId && !provider) throw new Error('missingProvider')
         if (
           state.blocks.some(
             (block) =>
@@ -120,13 +118,8 @@ export const usePackageStore = create<PackageStore>()(
         if (duplicate) throw new Error('duplicateBlockCode')
         if (block.packageId) {
           const item = state.packages.find((entry) => entry.id === block.packageId)
-          const provider = item && state.providers.find((entry) => entry.id === item.providerId)
           const keepingExistingAssignment = existingBlock?.packageId === block.packageId
-          if (
-            !item ||
-            !provider ||
-            (!keepingExistingAssignment && (!provider.active || !canAssignPackage(item)))
-          )
+          if (!item || (!keepingExistingAssignment && !canAssignPackage(item)))
             throw new Error('packageUnavailable')
           if (!matchesBlock(item, block.season, block.pilgrimType))
             throw new Error('packageMismatch')
@@ -140,7 +133,8 @@ export const usePackageStore = create<PackageStore>()(
     }),
     {
       name: PACKAGE_STORAGE_KEY,
-      version: 1,
+      version: 4,
+      migrate: (state, version) => migratePackageState(state, version),
       storage: createJSONStorage(() => packageStorage),
       partialize: ({ packages, providers, blocks }) => ({ packages, providers, blocks }),
       merge: (saved, current) => {

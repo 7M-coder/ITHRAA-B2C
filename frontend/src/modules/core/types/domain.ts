@@ -1,3 +1,4 @@
+import type { NationalityCode } from '../../employees/types/nationality'
 export type Nationality = 'Saudi' | 'NonSaudi'
 export type EmploymentStatus = 'Active' | 'Terminated'
 export interface Employee {
@@ -7,6 +8,12 @@ export interface Employee {
   bankIban: string
   idExpiryDate: string
   nationality: Nationality
+  nationalityCode?: NationalityCode
+  otherNationality?: string
+  phone?: string
+  email?: string
+  department?: string
+  startDate?: string
   jobTitle: string
   basicSalary: number
   housingAllowance: number

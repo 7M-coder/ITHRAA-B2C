@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Button, Card, Input, Select, Table, Tag } from 'antd'
+import { useRef, useState } from 'react'
+import { Button, Card, Input, Select, Table } from 'antd'
 import {
   PlusOutlined,
   SearchOutlined,
@@ -13,6 +13,8 @@ import { StatCard } from '../../core/components/StatCard'
 import { useDemoStore } from '../../core/hooks/useDemoStore'
 import { daysUntil, formatDate, money } from '../../core/utils/domain'
 import type { Employee } from '../../core/types/domain'
+import { EmployeeProfile } from '../components/EmployeeProfile'
+import { nationalityLabel } from '../utils/profile'
 import { EmployeeForm } from '../components/EmployeeForm'
 /** Lists all employees, including terminated records. @returns Employee management page. */
 export default function EmployeesPage() {
@@ -21,11 +23,20 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState<Employee>()
+  const [selectedId, setSelectedId] = useState<string>()
+  const selected = employees.find((e) => e.id === selectedId)
+  const [profileId, setProfileId] = useState<string>()
+  const profileTrigger = useRef<HTMLElement | null>(null)
+  const closeProfile = () => {
+    setProfileId(undefined)
+    profileTrigger.current?.focus()
+  }
   const rows = employees.filter(
     (e) =>
       (filter === 'all' || e.nationality === filter) &&
-      `${e.fullName} ${e.nationalId} ${e.jobTitle}`.toLowerCase().includes(search.toLowerCase())
+      `${e.fullName} ${e.nationalId} ${e.jobTitle} ${nationalityLabel(e, t)}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
   )
   return (
     <>
@@ -37,7 +48,7 @@ export default function EmployeesPage() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              setSelected(undefined)
+              setSelectedId(undefined)
               setOpen(true)
             }}
           >
@@ -82,7 +93,7 @@ export default function EmployeesPage() {
         <Table<Employee>
           rowKey="id"
           dataSource={rows}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1150 }}
           pagination={{ pageSize: 7, showSizeChanger: false, hideOnSinglePage: true }}
           locale={{ emptyText: t('noResults') }}
           columns={[
@@ -91,8 +102,17 @@ export default function EmployeesPage() {
               dataIndex: 'fullName',
               render: (_, e) => (
                 <div>
-                  <div className="font-bold">{e.fullName}</div>
-                  {e.employmentStatus === 'Terminated' && <Tag>{t('Terminated')}</Tag>}
+                  <Button
+                    type="link"
+                    className="h-auto! whitespace-normal! p-0! text-start! font-bold!"
+                    aria-label={t('viewProfile', { name: e.fullName })}
+                    onClick={(event) => {
+                      profileTrigger.current = event.currentTarget
+                      setProfileId(e.id)
+                    }}
+                  >
+                    {e.fullName}
+                  </Button>
                 </div>
               )
             },
@@ -104,9 +124,18 @@ export default function EmployeesPage() {
             {
               title: t('nationality'),
               dataIndex: 'nationality',
-              render: (v) => <Tag color={v === 'Saudi' ? 'cyan' : 'gold'}>{t(v)}</Tag>
+              render: (_, e) => <span>{nationalityLabel(e, t)}</span>
             },
             { title: t('jobTitle'), dataIndex: 'jobTitle' },
+            {
+              title: t('employmentStatus'),
+              dataIndex: 'employmentStatus',
+              render: (value) => (
+                <span className="text-muted">
+                  {t(value === 'Terminated' ? 'Terminated' : 'ActiveEmployee')}
+                </span>
+              )
+            },
             {
               title: t('basicSalary'),
               dataIndex: 'basicSalary',
@@ -116,14 +145,13 @@ export default function EmployeesPage() {
               title: t('idExpiryDate'),
               dataIndex: 'idExpiryDate',
               render: (v) => (
-                <div className={daysUntil(v) < 0 ? 'text-red-700' : ''}>
-                  {formatDate(v, i18n.language)}{' '}
-                  {daysUntil(v) < 0 ? (
-                    <Tag color="error">{t('expired')}</Tag>
-                  ) : daysUntil(v) <= 30 ? (
-                    <Tag color="warning">{t('soon')}</Tag>
-                  ) : null}
-                </div>
+                <span
+                  className={daysUntil(v) < 0 ? 'text-red-700 dark:text-red-400' : 'text-muted'}
+                >
+                  {t(daysUntil(v) < 0 ? 'expiredOn' : 'expiresOn', {
+                    date: formatDate(v, i18n.language)
+                  })}
+                </span>
               )
             },
             {
@@ -135,7 +163,7 @@ export default function EmployeesPage() {
                   aria-label={`${t('edit')} ${e.fullName}`}
                   icon={<EditOutlined />}
                   onClick={() => {
-                    setSelected(e)
+                    setSelectedId(e.id)
                     setOpen(true)
                   }}
                 >
@@ -146,6 +174,14 @@ export default function EmployeesPage() {
           ]}
         />
       </Card>
+      <EmployeeProfile
+        employeeId={profileId}
+        onClose={closeProfile}
+        onEdit={() => {
+          setSelectedId(profileId)
+          setOpen(true)
+        }}
+      />
       <EmployeeForm open={open} employee={selected} onClose={() => setOpen(false)} />
     </>
   )

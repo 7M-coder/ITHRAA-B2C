@@ -1,3 +1,4 @@
+import { readiness } from './finance'
 import type { HajjPackage, PackageStatus, PilgrimType } from '../types/domain'
 
 /** Calculates inclusive calendar days for a package period. @param startDate - Start date. @param endDate - End date. @returns Number of days or zero for invalid dates. */
@@ -16,7 +17,7 @@ export function createEntityId(prefix: string): string {
 
 /** Checks whether an archived package can be offered to a block. @param item - Package. @returns Whether its status allows assignment. */
 export function canAssignPackage(item: HajjPackage): boolean {
-  return item.status === 'available'
+  return item.status === 'available' && readiness(item).length === 0
 }
 
 /** Checks package compatibility with a block. @param item - Package. @param season - Hajj season. @param pilgrimType - Pilgrim category. @returns Whether the package matches. */

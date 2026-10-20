@@ -1,4 +1,5 @@
-export type PilgrimType = 'domestic' | 'international'
+import type { PackageEditorData } from './editor'
+export type PilgrimType = 'international'
 export type PackageStatus = 'draft' | 'available' | 'paused' | 'archived'
 export type ProviderCategory =
   'accommodation' | 'airline' | 'transport' | 'mashair' | 'catering' | 'guidance' | 'visa' | 'other'
@@ -88,6 +89,7 @@ export interface PackageServices {
 }
 
 export interface HajjPackage {
+  editor?: PackageEditorData
   id: string
   name: string
   description: string

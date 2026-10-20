@@ -5,6 +5,8 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import en from '../../public/locales/en/common.json'
 import ar from '../../public/locales/ar/common.json'
+import employeesEn from '../../public/locales/en/employees.json'
+import employeesAr from '../../public/locales/ar/employees.json'
 import packagesEn from '../../public/locales/en/packages.json'
 import packagesAr from '../../public/locales/ar/packages.json'
 import contractsEn from '../../public/locales/en/contracts.json'
@@ -35,10 +37,10 @@ await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
   resources: {
-    en: { common: en, packages: packagesEn, contracts: contractsEn },
-    ar: { common: ar, packages: packagesAr, contracts: contractsAr }
+    en: { common: en, packages: packagesEn, employees: employeesEn, contracts: contractsEn },
+    ar: { common: ar, packages: packagesAr, employees: employeesAr, contracts: contractsAr }
   },
-  ns: ['common', 'packages', 'contracts'],
+  ns: ['common', 'packages', 'employees', 'contracts'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }

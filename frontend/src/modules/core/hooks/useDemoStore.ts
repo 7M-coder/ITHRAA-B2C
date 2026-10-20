@@ -1,8 +1,9 @@
+import { normalizeEmployee } from '../../employees/utils/profile'
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { z } from 'zod'
 import type { Asset, AssetStatus, DemoData, Employee } from '../types/domain'
-import { employeeSchema, assetSchema } from '../validations/schemas'
+import { employeeSchema, employeeCreateSchema, assetSchema } from '../validations/schemas'
 import { canClear } from '../utils/domain'
 import { seedData } from '../utils/seed'
 export const STORAGE_KEY = 'ithraa-hr-demo-v1'
@@ -62,7 +63,10 @@ export const useDemoStore = create<DemoStore>()(
     (set, get) => ({
       ...seedData(),
       saveEmployee: (employee) => {
-        const value = employeeSchema.parse(employee)
+        const schema = get().employees.some((e) => e.id === employee.id)
+          ? employeeSchema
+          : employeeCreateSchema
+        const value = normalizeEmployee(schema.parse(normalizeEmployee(employee)))
         set((s) => ({
           employees: s.employees.some((e) => e.id === value.id)
             ? s.employees.map((e) => (e.id === value.id ? value : e))
@@ -110,7 +114,11 @@ export const useDemoStore = create<DemoStore>()(
           useStorageStatus.setState({ error: true })
           return current
         }
-        return { ...current, ...result.data }
+        return {
+          ...current,
+          ...result.data,
+          employees: result.data.employees.map(normalizeEmployee)
+        }
       },
       onRehydrateStorage: () => (_state, error) => {
         if (error) {

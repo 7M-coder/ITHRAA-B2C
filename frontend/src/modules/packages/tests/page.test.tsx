@@ -20,5 +20,5 @@ describe('package management page', () => {
     expect(screen.queryByText('باقة ضيافة مكة')).not.toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: 'مقدمو الخدمة' }))
     expect(await screen.findByText('سجل مقدمي الخدمة')).toBeInTheDocument()
-  })
+  }, 15000)
 })

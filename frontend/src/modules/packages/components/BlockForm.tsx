@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Button, Form, Input, Modal, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { HajjPackage, OperationsBlock, PilgrimType, ServiceProvider } from '../types/domain'
+import type { HajjPackage, OperationsBlock, ServiceProvider } from '../types/domain'
 import { createPackageFieldRule, requiredPackageTextSchema } from '../validations/schemas'
 
 interface BlockFormProps {
@@ -14,17 +14,9 @@ interface BlockFormProps {
 }
 
 /** Edits a minimal operations block and assigns one compatible package. @param props - Dialog state and related records. @returns Block editor. */
-export function BlockForm({
-  open,
-  initial,
-  packages,
-  providers,
-  onCancel,
-  onSave
-}: BlockFormProps) {
+export function BlockForm({ open, initial, packages, onCancel, onSave }: BlockFormProps) {
   const { t } = useTranslation('packages')
   const [form] = Form.useForm<OperationsBlock>()
-  const pilgrimType = Form.useWatch('pilgrimType', form) as PilgrimType | undefined
   const season = Form.useWatch('season', form)
   useEffect(() => {
     if (open)
@@ -34,22 +26,19 @@ export function BlockForm({
           code: '',
           name: '',
           season: '',
-          pilgrimType: 'domestic',
+          pilgrimType: 'international',
           packageId: null
         }
       )
   }, [form, initial, open])
   const eligible = packages.filter(
     (item) =>
-      ((item.status === 'available' &&
-        providers.some((provider) => provider.id === item.providerId && provider.active)) ||
-        item.id === initial?.packageId) &&
-      item.season === season &&
-      item.pilgrimType === pilgrimType
+      (item.status === 'available' || item.id === initial?.packageId) && item.season === season
   )
   const submit = (value: OperationsBlock) => {
     onSave({
       ...value,
+      pilgrimType: 'international',
       packageId: value.packageId || null,
       id: initial?.id ?? `block-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`
     })
@@ -83,14 +72,6 @@ export function BlockForm({
           rules={[createPackageFieldRule(requiredPackageTextSchema, t)]}
         >
           <Input maxLength={50} />
-        </Form.Item>
-        <Form.Item name="pilgrimType" label={t('fields.pilgrimType')} rules={[{ required: true }]}>
-          <Select
-            options={(['domestic', 'international'] as PilgrimType[]).map((value) => ({
-              value,
-              label: t(`values.${value}`)
-            }))}
-          />
         </Form.Item>
         <Form.Item name="packageId" label={t('block.package')}>
           <Select

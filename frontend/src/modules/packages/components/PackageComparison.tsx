@@ -1,6 +1,7 @@
-import { Modal, Table, Tag } from 'antd'
+import { Modal, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { HajjPackage, ServiceProvider } from '../types/domain'
+import { financialSummary, editorData } from '../utils/finance'
 import { getPackageDuration } from '../utils/domain'
 
 interface PackageComparisonProps {
@@ -11,26 +12,14 @@ interface PackageComparisonProps {
 }
 
 /** Compares selected package attributes in a compact table. @param props - Packages and modal state. @returns Comparison modal. */
-export function PackageComparison({ open, packages, providers, onClose }: PackageComparisonProps) {
+export function PackageComparison({ open, packages, onClose }: PackageComparisonProps) {
   const { t } = useTranslation('packages')
   const rows = [
-    {
-      key: 'type',
-      label: t('compare.pilgrimType'),
-      values: packages.map((item) => t(`values.${item.pilgrimType}`))
-    },
     { key: 'season', label: t('fields.season'), values: packages.map((item) => item.season) },
     {
-      key: 'provider',
-      label: t('fields.provider'),
-      values: packages.map(
-        (item) => providers.find((provider) => provider.id === item.providerId)?.name ?? '—'
-      )
-    },
-    {
       key: 'price',
-      label: t('fields.price'),
-      values: packages.map((item) => `${item.price.toLocaleString()} ${item.currency}`)
+      label: t('editor.financialSummary'),
+      values: packages.map((item) => financialSummary(item, t))
     },
     {
       key: 'duration',
@@ -44,8 +33,9 @@ export function PackageComparison({ open, packages, providers, onClose }: Packag
       label: t('compare.accommodation'),
       values: packages.map(
         (item) =>
-          item.services.accommodation?.map((place) => `${place.name} · ${place.city}`).join('، ') ||
-          '—'
+          editorData(item)
+            .stays.map((place) => `${place.hotel} · ${place.city}`)
+            .join('، ') || '—'
       )
     },
     {
@@ -63,15 +53,15 @@ export function PackageComparison({ open, packages, providers, onClose }: Packag
       label: t('compare.optionalServices'),
       values: packages.map(
         (item) =>
-          Object.keys(item.services)
-            .map((key) => t(`services.${key}`))
+          editorData(item)
+            .services.map((service) => t(`services.${service.category}`))
             .join('، ') || '—'
       )
     },
     {
       key: 'status',
       label: t('fields.status'),
-      values: packages.map((item) => <Tag key={item.id}>{t(`values.${item.status}`)}</Tag>)
+      values: packages.map((item) => t(`values.${item.status}`))
     }
   ]
   return (

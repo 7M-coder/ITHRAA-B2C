@@ -20,7 +20,21 @@ Ithraa B2C is an internal platform for a Hajj company, operated by its IT depart
 
 Pilgrims are organized into groups called blocks whose members share flight, train, bus, hotel, and sightseeing arrangements in Makkah and Madinah. Bookings are made outside the platform and entered manually. The system displays planned schedules; it does not require real-time location tracking. Pilgrims are records, not system user accounts.
 
-This frontend belongs to the `ithraa-b2c` monorepo alongside a Laravel API backend backed by MySQL. Arabic and English are supported. Package management, shared bookings between blocks, and room allocation remain open requirements documented in `../project-requirements.md`.
+This frontend belongs to the `ithraa-b2c` monorepo alongside a Laravel API backend backed by MySQL. Arabic and English are supported. Follow the latest user-approved requirements in the conversation and inspect the existing implementation before changing feature behavior.
+
+## Package audience
+
+Hajj packages serve international pilgrims only. Do not offer domestic pilgrims in forms or filters. Preserve legacy package and block IDs and links when migrating their audience to international.
+
+New packages use Hajj season 1448 and SAR by default; these are not editable form fields. Use plain room terminology (people per room), city-dependent demo hotel lists, and visible step navigation rather than a step dropdown.
+
+New packages start in cost calculation mode (`cost_draft`), not manual approved-price entry. The company calculates package prices, with profit as a percentage of cost. The existing cost sum is not a selling price. Historical Excel rates and per-item application are recorded in `packages-questions.md`; do not apply them universally or double-charge tax on inclusive costs. Preserve saved financial modes and values.
+
+Current package form has no package-company selector or provider requirement. Program and stay dates run from 2027-04-08 through 2027-06-05. Each stay supports multiple sequential periods; all their nights count. New lodging costs use bed/night × total nights, without dividing by room occupancy. Add 15% VAT, 5% accommodation, 2% collection and 3% city to the same base price, in every stay. Preserve recorded legacy cost bases and amounts; do not relabel them or double-charge already-inclusive costs. Transport choices are intercity (bus, Haramain train, private car) and holy sites (bus, Mashair train). Other saved services remain reviewable legacy data, not new options.
+
+## Documentation policy
+
+Keep agent instructions in `AGENTS.md`. Do not create separate requirements, progress-tracking, or demo specification Markdown files unless the user explicitly requests them. Clarify unresolved product questions in the conversation.
 
 ## Architecture and Implementation Instructions
 
