@@ -66,7 +66,9 @@ export function fieldRule(schema: z.ZodTypeAny, t: TFunction): Rule {
               'ibanError',
               'jobError',
               'unsafe',
-              'idNationalityError'
+              'idNationalityError',
+              'dateRange',
+              'englishOnly'
             ].includes(key)
               ? key
               : 'invalid'

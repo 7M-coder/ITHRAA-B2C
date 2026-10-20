@@ -51,6 +51,7 @@ export function DemoLayout() {
       children: [
         navLink('employees', 'employees', <TeamOutlined />),
         navLink('payroll', 'payroll', <WalletOutlined />),
+        navLink('contracts', 'contracts', <BankOutlined />),
         navLink('clearance', 'clearance', <SafetyCertificateOutlined />)
       ]
     },
@@ -73,7 +74,11 @@ export function DemoLayout() {
         to={`/${language}`}
         className="flex flex-col items-center gap-2 px-6 pb-7 pt-8 text-center text-inherit! no-underline"
       >
-        <img src={ithraaWordmarkLight} alt={t('brand')} className="h-14 w-auto max-w-full object-contain" />
+        <img
+          src={ithraaWordmarkLight}
+          alt={t('brand')}
+          className="h-14 w-auto max-w-full object-contain"
+        />
         <div className="text-xs leading-5 text-white/75">{t('product')}</div>
       </Link>
       <div className="px-7 pb-3 text-xs tracking-widest text-white/65">{t('workspace')}</div>
