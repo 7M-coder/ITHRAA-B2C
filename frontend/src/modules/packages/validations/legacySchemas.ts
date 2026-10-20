@@ -30,8 +30,6 @@ export const accommodationSchema = z.object({
   city: requiredText(80),
   location: safeText(200),
   classification: safeText(80),
-  roomType: safeText(80),
-  peoplePerRoom: maybeNumber,
   nights: maybeNumber,
   checkIn: maybeDate,
   checkOut: maybeDate,

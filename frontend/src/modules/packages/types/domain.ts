@@ -9,8 +9,6 @@ export interface AccommodationService {
   city: string
   location: string
   classification: string
-  roomType: string
-  peoplePerRoom: number | null
   nights: number | null
   checkIn: string
   checkOut: string
@@ -98,7 +96,6 @@ export interface HajjPackage {
   providerId: string
   startDate: string
   endDate: string
-  price: number
   currency: string
   bookingPolicy: string
   cancellationPolicy: string

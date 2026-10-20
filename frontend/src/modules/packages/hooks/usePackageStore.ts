@@ -28,7 +28,13 @@ const packageStorage: StateStorage = {
       if (saved === null) return null
       try {
         const parsed = JSON.parse(saved) as { version?: unknown; state?: unknown }
-        migratePackageState(parsed.state, Number(parsed.version))
+        const version = Number(parsed.version)
+        const migrated = migratePackageState(parsed.state, version)
+        if (version < 6) {
+          const upgraded = JSON.stringify({ state: migrated, version: 6 })
+          localStorage.setItem(key, upgraded)
+          return upgraded
+        }
       } catch {
         storageBlocked = true
         usePackageStorageStatus.setState({ error: true })
@@ -133,7 +139,7 @@ export const usePackageStore = create<PackageStore>()(
     }),
     {
       name: PACKAGE_STORAGE_KEY,
-      version: 4,
+      version: 6,
       migrate: (state, version) => migratePackageState(state, version),
       storage: createJSONStorage(() => packageStorage),
       partialize: ({ packages, providers, blocks }) => ({ packages, providers, blocks }),

@@ -1,16 +1,123 @@
 import type { HajjPackage, PackageDemoData } from '../types/domain'
+import type { PackageEditorData } from '../types/editor'
 import { packageDemoSchema as legacySchema } from '../validations/legacySchemas'
 import { z } from 'zod'
-import { packageDemoSchema, packageRecordSchema, blockSchema } from '../validations/schemas'
+import {
+  packageDemoSchema,
+  packageRecordSchema,
+  blockSchema,
+  editorObjectSchema
+} from '../validations/schemas'
 import { emptyEditor, newStay, readiness } from './finance'
-/** Converts a v1 record into a reviewable draft, preserving the original services and price. @param item - Original package. @returns Migrated package. */
+import { createDefaultServicePrices } from './servicePricing'
+import { SERVICE_PRICE_IDS } from './servicePricing'
+
+const oldAmount = z.number().finite().min(0).max(1e10).nullable()
+const oldOptionSchema = z.object({
+  needsReview: z.boolean().optional(),
+  id: z.string().min(1),
+  name: z.string(),
+  selections: z.record(z.number().int().min(1).max(4)),
+  approvedAmount: oldAmount,
+  tax: z.enum(['included', 'excluded', 'unknown']),
+  notes: z.string()
+})
+const oldRoomSchema = z.object({
+  occupancy: z.number().int().min(1).max(4),
+  enabled: z.boolean(),
+  beds: z.number().int().min(0).nullable(),
+  amount: oldAmount,
+  basis: z.enum(['room_night', 'bed_stay', 'bed_night']),
+  legacyAmount: oldAmount.optional(),
+  legacyBasis: z.enum(['room_night', 'bed_stay']).optional(),
+  tax: z.enum(['included', 'excluded', 'unknown'])
+})
+const oldStaySchema = z.object({
+  id: z.string().min(1),
+  city: z.string(),
+  hotel: z.string(),
+  kind: z.enum(['primary', 'transitional']),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  contractRef: z.string(),
+  notes: z.string(),
+  periods: z
+    .array(z.object({ id: z.string(), checkIn: z.string(), checkOut: z.string() }))
+    .optional(),
+  rooms: z.array(oldRoomSchema)
+})
+const oldEditorSchema = editorObjectSchema.omit({ servicePrices: true }).extend({
+  bedTaxes: z
+    .object({
+      vat: z.number(),
+      accommodation: z.number(),
+      collection: z.number(),
+      city: z.number()
+    })
+    .optional(),
+  stays: z.array(oldStaySchema),
+  options: z.array(oldOptionSchema),
+  mode: z.enum(['approved_price', 'cost_draft']),
+  costs: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      amount: oldAmount,
+      basis: z.enum(['person', 'group']),
+      divisor: z.number().int().positive().nullable(),
+      optionId: z.string().nullable(),
+      tax: z.enum(['included', 'excluded', 'unknown'])
+    })
+  ),
+  approval: z.object({ by: z.string(), date: z.string(), reference: z.string() }),
+  legacyPrice: z.number().finite().min(0).optional()
+})
+const v5ServicePriceSchema = z.object({
+  id: z.enum(
+    SERVICE_PRICE_IDS as [(typeof SERVICE_PRICE_IDS)[number], ...typeof SERVICE_PRICE_IDS]
+  ),
+  amount: oldAmount,
+  enabled: z.boolean()
+})
+const v5OptionSchema = z.object({
+  needsReview: z.boolean().optional(),
+  id: z.string().min(1),
+  name: z.string(),
+  selections: z.record(z.number().int().min(1).max(4)),
+  notes: z.string()
+})
+const v5EditorSchema = editorObjectSchema.omit({ servicePrices: true, stays: true }).extend({
+  bedTaxes: z
+    .object({
+      vat: z.number(),
+      accommodation: z.number(),
+      collection: z.number(),
+      city: z.number()
+    })
+    .optional(),
+  stays: z.array(oldStaySchema),
+  options: z.array(v5OptionSchema),
+  servicePrices: z.array(v5ServicePriceSchema)
+})
+const oldRecordSchema = packageRecordSchema.innerType().extend({
+  editor: oldEditorSchema,
+  price: z.number().finite().min(0)
+})
+const oldDemoSchema = packageDemoSchema.innerType().extend({ packages: z.array(oldRecordSchema) })
+const v5RecordSchema = packageRecordSchema.innerType().extend({ editor: v5EditorSchema })
+const v5DemoSchema = packageDemoSchema.innerType().extend({ packages: z.array(v5RecordSchema) })
+
+/** Converts a v1 record while dropping its approved package price and preserving its program. @param item - Legacy package. @returns Migrated package. */
 export function upgradePackage(
-  item: Omit<HajjPackage, 'pilgrimType'> & { pilgrimType: 'domestic' | 'international' }
+  item: Omit<HajjPackage, 'pilgrimType'> & {
+    pilgrimType: 'domestic' | 'international'
+    price?: number
+  }
 ): HajjPackage {
-  if (item.editor) return { ...item, pilgrimType: 'international' }
+  const current = omitFields(item, ['price'])
+  if (item.editor) return stripRemovedPricing(current as HajjPackage & { editor: unknown })
   const editor = emptyEditor()
   editor.needsReview = true
-  editor.legacyPrice = item.price
   editor.stays = (item.services.accommodation ?? []).map((s, i) => ({
     ...newStay(),
     id: `${item.id}-stay-${i}`,
@@ -18,23 +125,17 @@ export function upgradePackage(
     hotel: s.name,
     checkIn: s.checkIn,
     checkOut: s.checkOut,
-    notes: s.amenities,
-    rooms: newStay().rooms.map((r) => ({
-      ...r,
-      enabled:
-        s.peoplePerRoom !== null && [1, 2, 3, 4].includes(s.peoplePerRoom)
-          ? r.occupancy === s.peoplePerRoom
-          : r.enabled
-    }))
+    notes: s.amenities
   }))
   return {
-    ...item,
+    ...current,
     pilgrimType: 'international',
     status: item.status === 'available' ? 'draft' : item.status,
     editor
   }
 }
-/** Validates the original shape before migrating persisted data. @param value - Persisted state. @param version - Original storage version. @returns Validated current state. */
+
+/** Validates and migrates saved package data, removing approved prices and obsolete generic service costs. @param value - Persisted state. @param version - Original storage version. @returns Validated current state. */
 export function migratePackageState(value: unknown, version: number): PackageDemoData {
   if (version === 1) {
     const old = legacySchema.parse(value)
@@ -45,37 +146,85 @@ export function migratePackageState(value: unknown, version: number): PackageDem
     })
   }
   if (version === 2) {
-    const previous = packageDemoSchema
+    const oldVersionTwo = packageDemoSchema
       .innerType()
       .extend({
         packages: z.array(
-          packageRecordSchema
-            .innerType()
-            .extend({ pilgrimType: z.enum(['domestic', 'international']) })
+          oldRecordSchema.extend({ pilgrimType: z.enum(['domestic', 'international']) })
         ),
         blocks: z.array(blockSchema.extend({ pilgrimType: z.enum(['domestic', 'international']) }))
       })
       .parse(value)
     return packageDemoSchema.parse({
-      ...previous,
-      packages: previous.packages.map((p) =>
-        reviewCurrentRules({ ...p, pilgrimType: 'international' })
+      ...oldVersionTwo,
+      packages: oldVersionTwo.packages.map((p) =>
+        reviewCurrentRules(
+          stripRemovedPricing({ ...p, pilgrimType: 'international' } as unknown as HajjPackage & {
+            editor: unknown
+          })
+        )
       ),
-      blocks: previous.blocks.map((b) => ({ ...b, pilgrimType: 'international' }))
+      blocks: oldVersionTwo.blocks.map((b) => ({ ...b, pilgrimType: 'international' }))
     })
   }
-  if (version === 3) {
-    const previous = packageDemoSchema
-      .innerType()
-      .extend({ packages: z.array(packageRecordSchema.innerType()) })
-      .parse(value)
+  if (version === 3 || version === 4) {
+    const old = oldDemoSchema.parse(value)
     return packageDemoSchema.parse({
-      ...previous,
-      packages: previous.packages.map(reviewCurrentRules)
+      ...old,
+      packages: old.packages.map((p) =>
+        reviewCurrentRules(stripRemovedPricing(p as unknown as HajjPackage & { editor: unknown }))
+      )
     })
   }
-  if (version === 4) return packageDemoSchema.parse(value)
+  if (version === 5) {
+    const old = v5DemoSchema.parse(value)
+    return packageDemoSchema.parse({
+      ...old,
+      packages: old.packages.map((item) =>
+        reviewCurrentRules(
+          stripRemovedPricing(item as unknown as HajjPackage & { editor: unknown })
+        )
+      )
+    })
+  }
+  if (version === 6) return packageDemoSchema.parse(value)
   throw new Error('unsupportedVersion')
+}
+
+/** Removes deprecated room and approved-price data while preserving hotel stays and service pricing. @param item - Validated previous package. @returns Package without room options. */
+function stripRemovedPricing(item: HajjPackage & { editor: unknown; price?: number }): HajjPackage {
+  const packageData = omitFields(item, ['price'])
+  const editor = packageData.editor as PackageEditorData & Record<string, unknown>
+  const stays = editor.stays.map((stay) =>
+    omitFields(stay as typeof stay & Record<string, unknown>, ['rooms'])
+  )
+  const servicePrices = Array.isArray(editor.servicePrices)
+    ? editor.servicePrices
+    : createDefaultServicePrices()
+  const editorData = omitFields(editor, [
+    'bedTaxes',
+    'mode',
+    'costs',
+    'approval',
+    'legacyPrice',
+    'options',
+    'servicePrices'
+  ])
+  return {
+    ...packageData,
+    editor: {
+      ...editorData,
+      stays,
+      servicePrices
+    } as unknown as PackageEditorData
+  }
+}
+
+/** Removes fields made obsolete by a storage migration. @param value - Source record. @param keys - Fields to omit. @returns Record without obsolete fields. */
+function omitFields<T extends object, K extends string>(value: T, keys: readonly K[]): Omit<T, K> {
+  const result = { ...value } as Record<string, unknown>
+  keys.forEach((key) => delete result[key])
+  return result as Omit<T, K>
 }
 
 /** Downgrades newly incomplete legacy offers without changing their program or links. @param item - Stored package. @returns Package requiring review when necessary. */
