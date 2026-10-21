@@ -14,6 +14,10 @@ The current deliverable is an Arabic/English HR, payroll, custody, and clearance
 - Client validation improves input quality; it is not a security boundary against SQL injection/XSS. Render text safely and never inject user HTML. No backend security claims in this local demo.
 - Do not check PR checklist items unless actually completed. No claims of WPS compliance or real authentication.
 
+## Custody workflow
+
+Custody is a local tracking demo, with no approval workflow. Manager creation opens custody immediately. Employees record purchases and invoice evidence. Only the manager records actual receipt and closes cash custody with the returned amount (full positive remainder); overspending remains visible and does not imply reimbursement. Only the manager records physical receipt and closure, without a request or approval cycle. Preserve earlier records, attachments and action history. Every open custody blocks clearance. Keep role ownership checks and warn on local storage failures. The manager/employee switch is a simulation, not authentication.
+
 ## Original Project Background
 
 Ithraa B2C is an internal platform for a Hajj company, operated by its IT department. It records and displays pilgrims and their travel arrangements from booking in their home country through their return home.

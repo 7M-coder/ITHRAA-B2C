@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next'
 import type { Rule } from 'antd/es/form'
 import { NATIONALITY_CODES } from '../../employees/types/nationality'
 import { isSafeInput } from '../utils/inputSafety'
+import { workflowSchema } from '../../custody/validations/schemas'
 const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -79,9 +80,10 @@ export const employeeCreateSchema = employeeSchema.superRefine((value, ctx) => {
     if (!value[key]) ctx.addIssue({ code: 'custom', path: [key], message: 'required' })
 })
 export const assetSchema = z.object({
+  workflow: workflowSchema.optional(),
   id: z.string(),
   employeeId: z.string().min(1),
-  type: z.enum(['Car', 'Laptop', 'Advance']),
+  type: z.enum(['Car', 'Laptop', 'Advance', 'Equipment']),
   description: z.string().trim().min(1, 'required').refine(isSafeInput, 'unsafe'),
   serialNumber: z.string().trim().refine(isSafeInput, 'unsafe'),
   assignedAt: date,

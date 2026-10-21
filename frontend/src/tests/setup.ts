@@ -9,6 +9,8 @@ import employeesEn from '../../public/locales/en/employees.json'
 import employeesAr from '../../public/locales/ar/employees.json'
 import packagesEn from '../../public/locales/en/packages.json'
 import packagesAr from '../../public/locales/ar/packages.json'
+import custodyAr from '../../public/locales/ar/custody.json'
+import custodyEn from '../../public/locales/en/custody.json'
 // Node 25 exposes a partial global localStorage that shadows jsdom's Storage.
 const localStorageData = new Map<string, string>()
 Object.defineProperties(window.Storage.prototype, {
@@ -35,10 +37,10 @@ await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
   resources: {
-    en: { common: en, packages: packagesEn, employees: employeesEn },
-    ar: { common: ar, packages: packagesAr, employees: employeesAr }
+    en: { common: en, packages: packagesEn, employees: employeesEn, custody: custodyEn },
+    ar: { common: ar, packages: packagesAr, employees: employeesAr, custody: custodyAr }
   },
-  ns: ['common', 'packages', 'employees'],
+  ns: ['common', 'packages', 'employees', 'custody'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }

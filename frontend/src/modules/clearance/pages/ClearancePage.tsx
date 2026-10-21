@@ -1,3 +1,4 @@
+import { getCustodyStatus } from '../../custody/utils/workflow'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Alert, App, Button, Card, Empty, Select, Table, Tag } from 'antd'
@@ -8,7 +9,7 @@ import { PageHeader } from '../../core/components/PageHeader'
 import { canClear, formatDate } from '../../core/utils/domain'
 /** Reviews leave and custody, then records eligible clearance once. @returns Clearance page. */
 export default function ClearancePage() {
-  const { t, i18n } = useTranslation(['clearance', 'common'])
+  const { t, i18n } = useTranslation(['clearance', 'common', 'custody'])
   const [params] = useSearchParams()
   const [id, setId] = useState(params.get('employee') || '')
   const { message } = App.useApp()
@@ -71,11 +72,9 @@ export default function ClearancePage() {
                   {
                     title: t('employmentStatus'),
                     dataIndex: 'status',
-                    render: (v) => (
-                      <Tag
-                        color={v === 'Returned' ? 'success' : v === 'Lost' ? 'error' : 'warning'}
-                      >
-                        {t(v)}
+                    render: (_, asset) => (
+                      <Tag color={getCustodyStatus(asset) === 'closed' ? 'success' : 'warning'}>
+                        {t(`custody:wf.statuses.${getCustodyStatus(asset)}`)}
                       </Tag>
                     )
                   }

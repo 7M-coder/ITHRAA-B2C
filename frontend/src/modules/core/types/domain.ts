@@ -22,9 +22,10 @@ export interface Employee {
   employmentStatus?: EmploymentStatus
   uncompensatedLeaveDays?: number
 }
-export type AssetType = 'Car' | 'Laptop' | 'Advance'
+export type AssetType = 'Car' | 'Laptop' | 'Advance' | 'Equipment'
 export type AssetStatus = 'Active' | 'Returned' | 'Lost'
 export interface Asset {
+  workflow?: import('../../custody/types/workflow').CustodyWorkflow
   id: string
   employeeId: string
   type: AssetType
@@ -38,6 +39,7 @@ export interface Clearance {
   issuedAt: string
 }
 export interface DemoData {
+  inventory?: import('../../custody/types/workflow').InventoryItem[]
   employees: Employee[]
   assets: Asset[]
   clearances: Clearance[]

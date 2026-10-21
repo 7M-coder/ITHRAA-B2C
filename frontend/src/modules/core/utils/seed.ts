@@ -48,6 +48,7 @@ export function seedData(): DemoData {
     uncompensatedLeaveDays: i === 6 ? 4 : 0
   }))
   return {
+    inventory: [],
     employees,
     assets: [
       {
