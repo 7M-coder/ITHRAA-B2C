@@ -60,11 +60,6 @@ export function CustodyDetails({ asset, actor, onClose, onRun }: Props) {
                     children: asset.serialNumber || unit?.serial || '—'
                   },
                   {
-                    key: 'condition',
-                    label: t('wf.condition'),
-                    children: w?.conditionAtIssue || unit?.condition || '—'
-                  },
-                  {
                     key: 'accessories',
                     label: t('wf.accessories'),
                     children: w?.accessoriesAtIssue ?? unit?.accessories ?? '—'

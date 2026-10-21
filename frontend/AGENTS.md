@@ -16,7 +16,7 @@ The current deliverable is an Arabic/English HR, payroll, custody, and clearance
 
 ## Custody workflow
 
-Custody is a local tracking demo, with no approval workflow. Manager creation opens custody immediately. Employees record purchases and invoice evidence. Only the manager records actual receipt and closes cash custody with the returned amount (full positive remainder); overspending remains visible and does not imply reimbursement. Only the manager records physical receipt and closure, without a request or approval cycle. Preserve earlier records, attachments and action history. Every open custody blocks clearance. Keep role ownership checks and warn on local storage failures. The manager/employee switch is a simulation, not authentication.
+Custody is a local tracking demo, with no approval workflow. Manager creation opens custody immediately. Employees record purchases and invoice evidence. Only the manager records actual receipt and closes cash custody with the returned amount (full positive remainder); overspending remains visible and does not imply reimbursement. Only the manager records physical receipt and closure, without a request or approval cycle. Preserve earlier records, attachments and action history. Storage version 3 performs the user-requested one-time removal of old demo custodies and their nested purchases, attachments and history; employees, inventory and clearances are preserved. New stores start with an empty custody list and never reseed it. Every open custody blocks clearance. Keep role ownership checks and warn on local storage failures. The manager/employee switch is a simulation, not authentication.
 
 ## Original Project Background
 

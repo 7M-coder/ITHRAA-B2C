@@ -57,7 +57,7 @@ export const inventorySchema = z.object({
   type: z.enum(['Laptop', 'Car', 'Equipment']),
   name: custodyRequired,
   serial: custodyRequired,
-  condition: custodyRequired,
+  condition: custodyText.default(''),
   accessories: custodyText,
   retired: z.boolean()
 })

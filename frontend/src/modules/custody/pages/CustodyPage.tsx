@@ -243,7 +243,6 @@ export default function CustodyPage() {
                                 t(`wf.types.${item.type}`)
                             },
                             { title: t('wf.serial'), dataIndex: 'serial' },
-                            { title: t('wf.condition'), dataIndex: 'condition' },
                             { title: t('wf.accessories'), dataIndex: 'accessories' },
                             {
                               title: t('wf.status'),

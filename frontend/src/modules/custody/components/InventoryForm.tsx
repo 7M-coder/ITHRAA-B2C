@@ -9,7 +9,7 @@ interface Props {
   onClose: () => void
   onSave: (item: InventoryItem) => void
 }
-/** Registers a physical asset and delivery condition. @param props - Dialog callbacks. @returns Inventory form. */
+/** Registers a physical asset and its accessories. @param props - Dialog callbacks. @returns Inventory form. */
 export function InventoryForm({ open, onClose, onSave }: Props) {
   const { t } = useTranslation(['custody', 'common'])
   const [form] = Form.useForm<InventoryItem>()
@@ -32,7 +32,9 @@ export function InventoryForm({ open, onClose, onSave }: Props) {
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => onSave({ ...values, id: crypto.randomUUID(), retired: false })}
+        onFinish={(values) =>
+          onSave({ ...values, condition: '', id: crypto.randomUUID(), retired: false })
+        }
       >
         <Form.Item name="type" label={t('wf.assetType')} rules={[{ required: true }]}>
           <Select
@@ -42,7 +44,7 @@ export function InventoryForm({ open, onClose, onSave }: Props) {
             }))}
           />
         </Form.Item>
-        {(['name', 'serial', 'condition', 'accessories'] as const).map((key) => (
+        {(['name', 'serial', 'accessories'] as const).map((key) => (
           <Form.Item
             key={key}
             name={key}

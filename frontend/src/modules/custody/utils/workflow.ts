@@ -250,9 +250,6 @@ export function applyCustodyCommand(
           })
           event(asset, 'cashReturned', note)
         }
-      } else {
-        const unit = inventory.find((i) => i.id === w.inventoryId)
-        if (unit && note) unit.condition = note
       }
       w.returnNote = note
       event(asset, financial ? 'managerClosed' : 'managerReceived', note)

@@ -90,6 +90,7 @@ export const useDemoStore = create<DemoStore>()(
   persist(
     (set, get) => ({
       ...seedData(),
+      assets: [],
       inventory: [],
       custodyAction: (command, actor) => set(applyCustodyCommand(get(), command, actor)),
       saveEmployee: (employee) => {
@@ -135,10 +136,12 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: STORAGE_KEY,
-      version: 2,
+      version: 3,
       migrate: (saved, version) => {
-        if (version !== 1) throw new Error('Unsupported storage version')
-        return persistedSchema.parse(saved)
+        if (![1, 2].includes(version)) throw new Error('Unsupported storage version')
+        // User-requested one-time cleanup of obsolete demo custody and nested invoices/history.
+        const previous = persistedSchema.parse(saved)
+        return { ...previous, assets: [] }
       },
       storage: createJSONStorage(() => storage),
       partialize: ({ employees, assets, clearances, inventory }) => ({
