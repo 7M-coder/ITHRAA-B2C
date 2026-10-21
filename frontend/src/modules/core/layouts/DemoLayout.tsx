@@ -14,7 +14,8 @@ import {
   DownOutlined,
   LogoutOutlined,
   BulbOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  ImportOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/useTheme'
@@ -32,7 +33,7 @@ export function DemoLayout() {
   const [open, setOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const storageError = useStorageStatus((s) => s.error)
-  const currentPath = location.pathname.split('/')[2] || ''
+  const currentPath = location.pathname.split('/').slice(2).join('/') || ''
   const navLink = (key: string, path: string, icon: React.ReactNode) => ({
     key: path,
     icon,
@@ -66,6 +67,19 @@ export function DemoLayout() {
       icon: <ToolOutlined />,
       label: t('operations'),
       children: [navLink('buildPackage', 'packages', <GiftOutlined />)]
+    },
+    {
+      key: 'inputs-section',
+      icon: <ImportOutlined />,
+      label: t('inputsSection'),
+      children: [
+        navLink('internationalFlights', 'inputs/international-flights', <ImportOutlined />),
+        navLink('accommodationInput', 'inputs/accommodation', <BankOutlined />),
+        navLink('cateringInput', 'inputs/catering', <GiftOutlined />),
+        navLink('transportInput', 'inputs/transport', <ToolOutlined />),
+        navLink('enrichmentTripsInput', 'inputs/enrichment-trips', <AppstoreOutlined />),
+        navLink('mashairInput', 'inputs/mashair', <SafetyCertificateOutlined />)
+      ]
     }
   ]
   const navigation = (
@@ -91,9 +105,11 @@ export function DemoLayout() {
             ? ['custody-section']
             : currentPath === 'packages'
               ? ['operations']
-              : currentPath
-                ? ['human-resources']
-                : []
+              : currentPath.startsWith('inputs/')
+                ? ['inputs-section']
+                : currentPath
+                  ? ['human-resources']
+                  : []
         }
         items={items}
       />
