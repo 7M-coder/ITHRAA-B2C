@@ -34,6 +34,7 @@ export function PackageGeneralStep({ item, onChange }: EditorStepProps) {
             options={[
               'luxury',
               'luxury_transitional',
+              'transitional',
               'premium',
               'premium_transitional',
               'basic',

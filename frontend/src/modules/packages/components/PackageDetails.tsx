@@ -1,27 +1,26 @@
 import { Alert, Button, Card, Descriptions, Empty, Table } from 'antd'
-import { useTranslation } from 'react-i18next'
+import { usePackageTranslations } from '../hooks/usePackageTranslations'
 import { stayPeriods } from '../utils/periods'
-import { PackageDescriptionEditor } from './PackageDescriptionEditor'
-import { usePackageStore } from '../hooks/usePackageStore'
 import type { HajjPackage, ServiceProvider } from '../types/domain'
 import {
   editorData,
   financialSummary,
-  optionCost,
   packageWarnings,
   readiness,
   stayNights,
-  stayPeriodNights
+  stayPeriodNights,
+  servicePricing
 } from '../utils/finance'
+import { PackageDescriptionEditor } from './PackageDescriptionEditor'
+import { SERVICE_VAT_RATE } from '../utils/servicePricing'
 interface Props {
   item: HajjPackage
   provider?: ServiceProvider
   onEdit?: (step: number) => void
 }
-/** Displays an ordered program and transparent per-option financial review. @param props - Package and optional edit shortcuts. @returns Review content. */
+/** Displays an ordered program and transparent per-pilgrim service pricing. @param props - Package and optional edit shortcuts. @returns Review content. */
 export function PackageDetails({ item, onEdit }: Props) {
-  const providers = usePackageStore((s) => s.providers)
-  const { t } = useTranslation('packages')
+  const { t } = usePackageTranslations()
   const e = editorData(item)
   const missing = readiness(item)
   return (
@@ -97,15 +96,12 @@ export function PackageDetails({ item, onEdit }: Props) {
                   </p>
                 ))}
 
-                <p className="text-sm text-muted">
-                  {s.rooms
-                    .filter((r) => r.enabled)
-                    .map(
-                      (r) =>
-                        `${r.occupancy >= 2 ? t(`editor.roomTypes.${r.occupancy}`) : t('editor.occupancy', { count: r.occupancy })}${r.beds !== null ? ` · ${r.beds} ${t('editor.beds')}` : ''}`
-                    )
-                    .join(' / ')}
-                </p>
+                {!!s.roomTypes?.length && (
+                  <p className="text-sm text-muted">
+                    {t('editor.roomTypesLabel', { defaultValue: t('fields.roomType') })}:{' '}
+                    {s.roomTypes.map((type) => t(`editor.roomTypes.${type}`)).join(' / ')}
+                  </p>
+                )}
                 {s.contractRef && (
                   <p>
                     {t('editor.contractRef')}: {s.contractRef}
@@ -142,10 +138,6 @@ export function PackageDetails({ item, onEdit }: Props) {
             },
             { title: t('editor.serviceDescription'), dataIndex: 'description' },
             {
-              title: t('editor.transportProvider'),
-              render: (_, s) => providers.find((p) => p.id === s.providerId)?.name || '—'
-            },
-            {
               title: t('editor.included'),
               render: (_, s) => t(s.included ? 'editor.included' : 'editor.excluded')
             }
@@ -174,81 +166,46 @@ export function PackageDetails({ item, onEdit }: Props) {
         extra={onEdit && <Button onClick={() => onEdit(3)}>{t('actions.edit')}</Button>}
       >
         <p className="text-lg font-semibold">{financialSummary(item, t)}</p>
-        <p className="text-sm text-muted">
-          {t(e.mode === 'cost_draft' ? 'editor.costNote' : 'editor.approvedNote')}
-        </p>
-        {!e.options.length && <Empty description={t('editor.noOptions')} />}
-        {e.options.map((o) => {
-          const cost = optionCost(item, o)
-          return (
-            <section className="mt-5 border-t border-line pt-4" key={o.id}>
-              <h4>{o.name || t('editor.option')}</h4>
-              <p>
-                {e.stays
-                  .map(
-                    (s) =>
-                      `${s.hotel || s.city || t('editor.stay')}: ${o.selections[s.id] ? t('editor.occupancy', { count: o.selections[s.id] }) : t('editor.incomplete')}`
-                  )
-                  .join(' / ')}
-              </p>
-              {e.mode === 'approved_price' ? (
-                <p>
-                  {t('editor.amountPerPerson')}:{' '}
-                  {o.approvedAmount?.toFixed(2) ?? t('editor.incomplete')}{' '}
-                  {item.currency === 'SAR' ? t('editor.riyal') : item.currency} ·{' '}
-                  {t(`editor.tax.${o.tax}`)}
-                </p>
-              ) : (
-                <>
-                  <Table
-                    rowKey="key"
-                    pagination={false}
-                    size="small"
-                    dataSource={cost.lines}
-                    columns={[
-                      { title: t('editor.costName'), dataIndex: 'name' },
-                      {
-                        title: t('editor.amountPerPerson'),
-                        render: (_, l) =>
-                          l.amount === null
-                            ? t('editor.incomplete')
-                            : `${l.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${item.currency === 'SAR' ? t('editor.riyal') : item.currency}`
-                      },
-                      { title: t('editor.taxLabel'), render: (_, l) => t(`editor.tax.${l.tax}`) }
-                    ]}
-                    scroll={{ x: 450 }}
-                  />
-                  <p className="font-semibold">
-                    {t('editor.estimatedCost')}: {cost.total?.toFixed(2) ?? t('editor.incomplete')}{' '}
-                    {item.currency === 'SAR' ? t('editor.riyal') : item.currency}
-                  </p>
-                  {!cost.taxComplete && (
-                    <p className="text-sm text-amber-700">{t('editor.taxCaveat')}</p>
-                  )}
-                </>
-              )}
-              <p className="whitespace-pre-wrap">{o.notes}</p>
-            </section>
-          )
-        })}
-        {e.mode === 'approved_price' && (
-          <Descriptions
-            className="mt-5"
-            column={1}
-            items={[
-              { key: 'by', label: t('editor.approvedBy'), children: e.approval.by || '—' },
-              { key: 'date', label: t('editor.approvalDate'), children: e.approval.date || '—' },
-              { key: 'ref', label: t('editor.approvalRef'), children: e.approval.reference || '—' }
-            ]}
-          />
-        )}
-      </Card>
-      {e.legacyPrice !== undefined && (
-        <Alert
-          type="warning"
-          message={t('editor.legacyPrice', { amount: e.legacyPrice, currency: item.currency })}
+        <p className="text-sm text-muted">{t('editor.servicePrices.totalNote')}</p>
+        <Table
+          rowKey="key"
+          pagination={false}
+          size="small"
+          dataSource={servicePricing(item).lines}
+          columns={[
+            {
+              title: t('editor.priceComponent'),
+              render: (_, line) => t(`editor.servicePrices.items.${line.id}`)
+            },
+            {
+              title: t('editor.servicePrices.amountBeforeVat'),
+              render: (_, line) =>
+                line.amount === null
+                  ? t('editor.incomplete')
+                  : `${line.amount.base.toFixed(2)} ${item.currency === 'SAR' ? t('editor.riyal') : item.currency}`
+            },
+            {
+              title: t('editor.servicePrices.vatAmount'),
+              render: (_, line) =>
+                line.amount === null
+                  ? t('editor.incomplete')
+                  : `${line.amount.vat.toFixed(2)} ${item.currency === 'SAR' ? t('editor.riyal') : item.currency}`
+            },
+            {
+              title: t('editor.amountPerPerson'),
+              render: (_, line) =>
+                line.amount === null
+                  ? t('editor.incomplete')
+                  : `${line.amount.total.toFixed(2)} ${item.currency === 'SAR' ? t('editor.riyal') : item.currency}`
+            },
+            {
+              title: t('editor.taxLabel'),
+              render: () => t('editor.servicePrices.vatApplied', { rate: SERVICE_VAT_RATE })
+            }
+          ]}
+          scroll={{ x: 650 }}
         />
-      )}
+      </Card>
     </div>
   )
 }

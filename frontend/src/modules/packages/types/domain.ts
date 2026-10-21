@@ -9,8 +9,6 @@ export interface AccommodationService {
   city: string
   location: string
   classification: string
-  roomType: string
-  peoplePerRoom: number | null
   nights: number | null
   checkIn: string
   checkOut: string
@@ -89,17 +87,16 @@ export interface PackageServices {
 }
 
 export interface HajjPackage {
-  descriptionDocument?: import('@tiptap/react').JSONContent
   editor?: PackageEditorData
   id: string
   name: string
   description: string
+  descriptionDocument?: import('@tiptap/react').JSONContent
   pilgrimType: PilgrimType
   season: string
   providerId: string
   startDate: string
   endDate: string
-  price: number
   currency: string
   bookingPolicy: string
   cancellationPolicy: string

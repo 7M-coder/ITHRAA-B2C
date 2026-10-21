@@ -1,47 +1,38 @@
-import { App, Button, Card, Checkbox, Empty, Form, Input, Select } from 'antd'
-import { ArrowUpOutlined, ArrowDownOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { useTranslation } from 'react-i18next'
+import { Button, Card, Checkbox, Empty, Form, Input, Select } from 'antd'
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { usePackageTranslations } from '../hooks/usePackageTranslations'
 import type { EditorStepProps } from '../types/editorProps'
-import type { PackageStay } from '../types/editor'
+import type { PackageStay, RoomType } from '../types/editor'
 import { editorData, newStay, removeStay } from '../utils/finance'
 import { PackageStayPeriods } from './PackageStayPeriods'
-import { demoCities, cityKey, cityHotels, changeStayCity } from '../utils/hotelCatalog'
+import { changeStayCity, cityHotels, cityKey, demoCities } from '../utils/hotelCatalog'
 import { EditorField } from './EditorField'
-/** Edits stable stay stages and bed allocations; reordering leaves option links intact. @param props - Controlled package. @returns Stay editor. */
+
+/** Edits hotel stays, travel dates, and package notes. @param props - Controlled package. @returns Stay editor. */
 export function PackageStaysStep({ item, onChange }: EditorStepProps) {
-  const { t } = useTranslation('packages')
-  const { modal } = App.useApp()
-  const e = editorData(item)
+  const { t } = usePackageTranslations()
+  const editor = editorData(item)
   const update = (id: string, patch: Partial<PackageStay>) =>
     onChange({
       ...item,
-      editor: { ...e, stays: e.stays.map((s) => (s.id === id ? { ...s, ...patch } : s)) }
+      editor: {
+        ...editor,
+        stays: editor.stays.map((stay) => (stay.id === id ? { ...stay, ...patch } : stay))
+      }
     })
   const move = (index: number, offset: number) => {
-    const stays = [...e.stays]
+    const stays = [...editor.stays]
     ;[stays[index], stays[index + offset]] = [stays[index + offset], stays[index]]
-    onChange({ ...item, editor: { ...e, stays } })
-  }
-  const remove = (id: string) => {
-    if (e.options.some((o) => id in o.selections))
-      modal.confirm({
-        title: t('editor.removeStay'),
-        content: t('editor.removeStayConfirm'),
-        okText: t('actions.remove'),
-        cancelText: t('actions.cancel'),
-        onOk: () => onChange(removeStay(item, id))
-      })
-    else onChange(removeStay(item, id))
+    onChange({ ...item, editor: { ...editor, stays } })
   }
   return (
     <div className="space-y-5">
       <p className="text-muted">{t('editor.hotelDemoNote')}</p>
-      <p className="text-muted">{t('editor.bedsNote')}</p>
-      {!e.stays.length && <Empty description={t('editor.noStays')} />}
-      {e.stays.map((s, index) => (
+      {!editor.stays.length && <Empty description={t('editor.noStays')} />}
+      {editor.stays.map((stay, index) => (
         <Card
-          key={s.id}
-          title={`${index + 1}. ${s.hotel || t('editor.stay')}`}
+          key={stay.id}
+          title={`${index + 1}. ${stay.hotel || t('editor.stay')}`}
           extra={
             <div className="flex gap-1">
               <Button
@@ -53,14 +44,14 @@ export function PackageStaysStep({ item, onChange }: EditorStepProps) {
               <Button
                 aria-label={t('editor.moveDown')}
                 icon={<ArrowDownOutlined />}
-                disabled={index === e.stays.length - 1}
+                disabled={index === editor.stays.length - 1}
                 onClick={() => move(index, 1)}
               />
               <Button
                 danger
                 aria-label={t('editor.removeStay')}
                 icon={<DeleteOutlined />}
-                onClick={() => remove(s.id)}
+                onClick={() => onChange(removeStay(item, stay.id))}
               />
             </div>
           }
@@ -71,16 +62,20 @@ export function PackageStaysStep({ item, onChange }: EditorStepProps) {
                 <Select
                   aria-label={t('editor.city')}
                   value={
-                    demoCities.find((c) => c.key === cityKey(s.city))?.value || s.city || undefined
+                    demoCities.find((city) => city.key === cityKey(stay.city))?.value ||
+                    stay.city ||
+                    undefined
                   }
                   options={[
-                    ...demoCities.map((c) => ({
-                      value: c.value,
-                      label: t(`editor.cities.${c.key}`)
+                    ...demoCities.map((city) => ({
+                      value: city.value,
+                      label: t(`editor.cities.${city.key}`)
                     })),
-                    ...(s.city && !cityKey(s.city) ? [{ value: s.city, label: s.city }] : [])
+                    ...(stay.city && !cityKey(stay.city)
+                      ? [{ value: stay.city, label: stay.city }]
+                      : [])
                   ]}
-                  onChange={(city) => update(s.id, changeStayCity(s, city))}
+                  onChange={(city) => update(stay.id, changeStayCity(stay, city))}
                 />
               </EditorField>
               <EditorField label={t('editor.hotel')}>
@@ -88,81 +83,71 @@ export function PackageStaysStep({ item, onChange }: EditorStepProps) {
                   aria-label={t('editor.hotel')}
                   showSearch
                   optionFilterProp="label"
-                  disabled={!cityKey(s.city)}
-                  placeholder={t(cityKey(s.city) ? 'editor.chooseHotel' : 'editor.chooseCityFirst')}
-                  value={s.hotel || undefined}
-                  options={cityHotels(s.city, s.hotel).map((h) => ({
-                    value: h.value,
-                    label: h.key ? t(`editor.hotels.${h.key}`) : h.value
+                  disabled={!cityKey(stay.city)}
+                  placeholder={t(
+                    cityKey(stay.city) ? 'editor.chooseHotel' : 'editor.chooseCityFirst'
+                  )}
+                  value={stay.hotel || undefined}
+                  options={cityHotels(stay.city, stay.hotel).map((hotel) => ({
+                    value: hotel.value,
+                    label: hotel.key ? t(`editor.hotels.${hotel.key}`) : hotel.value
                   }))}
-                  onChange={(hotel) => update(s.id, { hotel })}
+                  onChange={(hotel) => update(stay.id, { hotel })}
                 />
               </EditorField>
               <EditorField label={t('editor.kind')}>
                 <Select
                   aria-label={t('editor.kind')}
-                  value={s.kind}
+                  value={stay.kind}
                   options={['primary', 'transitional'].map((value) => ({
                     value,
                     label: t(`editor.${value}`)
                   }))}
-                  onChange={(kind) => update(s.id, { kind })}
+                  onChange={(kind) => update(stay.id, { kind })}
                 />
               </EditorField>
               <EditorField label={t('editor.contractRef')} text>
                 <Input
                   aria-label={t('editor.contractRef')}
-                  value={s.contractRef}
-                  onChange={(v) => update(s.id, { contractRef: v.target.value })}
+                  value={stay.contractRef}
+                  onChange={(event) => update(stay.id, { contractRef: event.target.value })}
                 />
               </EditorField>
             </div>
-            <PackageStayPeriods item={item} stay={s} onChange={(stay) => update(s.id, stay)} />
-            <h4 className="mb-3">{t('editor.peoplePerRoom')}</h4>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {s.rooms
-                .filter((room) => room.occupancy >= 2 || room.enabled)
-                .map((room) => (
-                  <div key={room.occupancy} className="rounded-lg border border-line p-3">
-                    <Checkbox
-                      checked={room.enabled}
-                      onChange={(v) => {
-                        const rooms = s.rooms.map((r) =>
-                          r.occupancy === room.occupancy ? { ...r, enabled: v.target.checked } : r
+            <PackageStayPeriods
+              item={item}
+              stay={stay}
+              onChange={(updated) => update(stay.id, updated)}
+            />
+            <fieldset className="mb-5 border-0 p-0">
+              <legend className="mb-3 text-sm font-semibold">
+                {t('editor.roomTypesLabel', { defaultValue: t('fields.roomType') })}
+              </legend>
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
+                {([2, 3, 4] as RoomType[]).map((type) => (
+                  <Checkbox
+                    key={type}
+                    checked={(stay.roomTypes ?? []).includes(type)}
+                    onChange={(event) =>
+                      update(stay.id, {
+                        roomTypes: ([2, 3, 4] as RoomType[]).filter((value) =>
+                          value === type
+                            ? event.target.checked
+                            : (stay.roomTypes ?? []).includes(value)
                         )
-                        const options = e.options.map((o) => ({
-                          ...o,
-                          needsReview:
-                            o.needsReview ||
-                            (!v.target.checked && o.selections[s.id] === room.occupancy),
-                          selections: Object.fromEntries(
-                            Object.entries(o.selections).filter(
-                              ([id, n]) => id !== s.id || n !== room.occupancy || v.target.checked
-                            )
-                          )
-                        }))
-                        onChange({
-                          ...item,
-                          editor: {
-                            ...e,
-                            stays: e.stays.map((x) => (x.id === s.id ? { ...s, rooms } : x)),
-                            options
-                          }
-                        })
-                      }}
-                    >
-                      {room.occupancy === 1
-                        ? t('editor.occupancy', { count: 1 })
-                        : t(`editor.roomTypes.${room.occupancy}`)}
-                    </Checkbox>
-                  </div>
+                      })
+                    }
+                  >
+                    {t(`editor.roomTypes.${type}`)}
+                  </Checkbox>
                 ))}
-            </div>
+              </div>
+            </fieldset>
             <EditorField label={t('editor.notes')} text>
               <Input.TextArea
                 aria-label={t('editor.notes')}
-                value={s.notes}
-                onChange={(v) => update(s.id, { notes: v.target.value })}
+                value={stay.notes}
+                onChange={(event) => update(stay.id, { notes: event.target.value })}
               />
             </EditorField>
           </Form>
@@ -170,7 +155,9 @@ export function PackageStaysStep({ item, onChange }: EditorStepProps) {
       ))}
       <Button
         icon={<PlusOutlined />}
-        onClick={() => onChange({ ...item, editor: { ...e, stays: [...e.stays, newStay()] } })}
+        onClick={() =>
+          onChange({ ...item, editor: { ...editor, stays: [...editor.stays, newStay()] } })
+        }
       >
         {t('editor.addStay')}
       </Button>

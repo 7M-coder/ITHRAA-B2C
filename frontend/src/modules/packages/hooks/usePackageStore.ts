@@ -146,7 +146,7 @@ export const usePackageStore = create<PackageStore>()(
     }),
     {
       name: PACKAGE_STORAGE_KEY,
-      version: 4,
+      version: 8,
       migrate: (state, version) => migratePackageState(state, version),
       storage: createJSONStorage(() => packageStorage),
       partialize: ({ packages, providers, blocks }) => ({ packages, providers, blocks }),

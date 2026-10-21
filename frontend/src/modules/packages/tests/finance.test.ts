@@ -1,164 +1,87 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { completePackage } from './fixtures'
 import {
   editorData,
-  optionCost,
+  financialSummary,
+  packageWarnings,
   readiness,
   removeStay,
-  packageWarnings,
-  stayNights,
-  financialSummary
+  servicePricing
 } from '../utils/finance'
 import { packageSchema } from '../validations/schemas'
 import { canAssignPackage } from '../utils/domain'
 import { newPackage } from '../utils/editor'
-describe('package financial model', () => {
+import {
+  OPTIONAL_SERVICE_PRICE_IDS,
+  REQUIRED_SERVICE_PRICE_IDS,
+  servicePriceWithVat
+} from '../utils/servicePricing'
+
+describe('package service pricing', () => {
   it('supports a minimal draft with only name and season', () => {
     expect(
       packageSchema.safeParse({ ...newPackage(), name: 'Draft', season: '1448' }).success
     ).toBe(true)
   })
-  it('calculates room-night costs per person and uses full-stay bed cost once', () => {
+  it('adds service VAT once to per-pilgrim prices and calculates the subtotal', () => {
     const p = completePackage()
-    const result = optionCost(p, editorData(p).options[0])
-    expect(result.total).toBe(650)
-    expect(result.lines.map((l) => l.amount)).toEqual([450, 200])
-    expect(result.taxComplete).toBe(true)
+    const result = servicePricing(p)
+    expect(result.total).toBe(1150)
+    expect(result.lines).toHaveLength(10)
+    expect(result.lines[0].amount).toEqual({ base: 100, vat: 15, total: 115 })
+    expect(servicePriceWithVat(115)?.total).toBe(132.25)
   })
-  it('distributes group costs and respects option-specific services', () => {
+  it('requires ten basic services and leaves all three special services optional', () => {
     const p = completePackage(),
-      e = editorData(p)
-    e.options.push({ ...e.options[0], id: 'option-b' })
-    e.costs = [
-      {
-        id: 'bus',
-        name: 'Bus',
-        amount: 5000,
-        basis: 'group',
-        divisor: 46,
-        optionId: null,
-        tax: 'excluded'
-      },
-      {
-        id: 'special',
-        name: 'Special',
-        amount: 100,
-        basis: 'person',
-        divisor: null,
-        optionId: 'option-b',
-        tax: 'unknown'
-      }
-    ]
-    expect(optionCost(p, e.options[0]).total).toBe(758.7)
-    expect(optionCost(p, e.options[1]).total).toBe(858.7)
-    expect(optionCost(p, e.options[0]).taxComplete).toBe(false)
-  })
-  it('rounds only the sum, not individual cost lines', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    e.stays.forEach((s) => s.rooms.forEach((r) => (r.amount = 0)))
-    e.costs = [1, 2, 3].map((id) => ({
-      id: String(id),
-      name: 'Third',
-      amount: 1,
-      basis: 'group' as const,
-      divisor: 3,
-      optionId: null,
-      tax: 'included' as const
-    }))
-    expect(optionCost(p, e.options[0]).total).toBe(1)
-  })
-  it('distinguishes missing amounts from explicit zero', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    e.stays[0].rooms.find((r) => r.occupancy === 2)!.amount = null
-    expect(optionCost(p, e.options[0]).total).toBeNull()
-    e.stays[0].rooms.find((r) => r.occupancy === 2)!.amount = 0
-    expect(optionCost(p, e.options[0]).total).toBe(200)
-    e.options[0].approvedAmount = 0
+      editor = editorData(p)
+    expect(REQUIRED_SERVICE_PRICE_IDS).toHaveLength(10)
+    expect(OPTIONAL_SERVICE_PRICE_IDS).toHaveLength(3)
     expect(readiness(p)).toEqual([])
-  })
-  it.each([-1, NaN, Infinity])('rejects invalid amount %s', (amount) => {
-    const p = completePackage()
-    editorData(p).stays[0].rooms.find((r) => r.occupancy === 2)!.amount = amount
-    expect(packageSchema.safeParse(p).success).toBe(false)
-    expect(optionCost(p, editorData(p).options[0]).total).toBeNull()
-  })
-  it('rejects zero and fractional group distribution counts', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    for (const divisor of [0, -1, 1.5]) {
-      e.costs = [
-        {
-          id: 'x',
-          name: 'Bus',
-          amount: 20,
-          basis: 'group',
-          divisor,
-          optionId: null,
-          tax: 'included'
-        }
-      ]
-      expect(packageSchema.safeParse(p).success).toBe(false)
-      expect(optionCost(p, e.options[0]).total).toBeNull()
-    }
-  })
-  it('keeps both modes independent and prevents cost drafts from being sold', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    expect(canAssignPackage(p)).toBe(true)
-    e.mode = 'cost_draft'
-    expect(canAssignPackage(p)).toBe(false)
-    expect(packageSchema.safeParse(p).success).toBe(false)
-    expect(financialSummary(p, (k) => k)).toContain('editor.estimatedCost')
-    e.mode = 'approved_price'
-    expect(e.options[0].approvedAmount).toBe(1200)
-    expect(optionCost(p, e.options[0]).total).toBe(650)
-  })
-  it('requires approval and known tax before availability, but accepts incomplete drafts', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    e.approval.by = ''
-    e.options[0].tax = 'unknown'
-    expect(readiness(p)).toEqual(expect.arrayContaining(['approval', 'prices']))
-    expect(packageSchema.safeParse(p).success).toBe(false)
+    const meals = editor.servicePrices.find((service) => service.id === 'meals')!
+    meals.amount = null
+    expect(readiness(p)).toContain('servicePrices')
+    expect(servicePricing(p).total).toBeNull()
     expect(packageSchema.safeParse({ ...p, status: 'draft' }).success).toBe(true)
-    expect(financialSummary(p, (k) => k)).toBe('editor.incomplete')
+    expect(packageSchema.safeParse({ ...p, status: 'available' }).success).toBe(false)
+    meals.amount = 100
+    const wheelchair = editor.servicePrices.find((service) => service.id === 'wheelchairCompanion')!
+    wheelchair.enabled = true
+    wheelchair.amount = 50
+    expect(servicePricing(p).total).toBe(1207.5)
   })
-  it('preserves option associations when stages reorder and makes deleted selections incomplete', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    e.stays.reverse()
-    expect(optionCost(p, e.options[0]).total).toBe(650)
-    const changed = removeStay(p, 'stay-a')
-    expect(editorData(changed).options[0].selections).toEqual({ 'stay-b': 4 })
-    const restored = {
-      ...changed,
-      editor: { ...editorData(changed), stays: [...editorData(changed).stays, e.stays[1]] }
-    }
-    expect(readiness(restored)).toContain('options')
-  })
-  it('validates calendar dates, stage ordering and program bounds; overlap and beds only warn', () => {
-    const p = completePackage(),
-      e = editorData(p)
-    expect(stayNights('2027-02-30', '2027-03-04')).toBeNull()
-    e.stays[0].checkOut = '2027-05-10'
-    expect(packageSchema.safeParse(p).success).toBe(false)
-    e.stays[0].checkOut = '2027-05-14'
-    e.stays[0].rooms.find((r) => r.occupancy === 2)!.beds = 44
-    expect(packageSchema.safeParse(p).success).toBe(true)
-    expect(packageWarnings(p)).toEqual(expect.arrayContaining(['overlap', 'beds']))
-    e.stays[0].checkIn = '2027-05-09'
-    expect(packageSchema.safeParse(p).success).toBe(false)
-  })
-  it('rejects removed references and unsafe text even in drafts', () => {
+  it('does not enable assignment until all required and selected special service prices are complete', () => {
     const p = completePackage()
+    editorData(p).servicePrices.find((service) => service.id === 'simCard')!.amount = null
     p.status = 'draft'
-    editorData(p).options[0].selections.invalid = 2
+    expect(packageSchema.safeParse(p).success).toBe(true)
+    expect(canAssignPackage(p)).toBe(false)
+    expect(financialSummary(p, (key) => key)).toBe('editor.incomplete')
+  })
+  it('accepts an explicit zero price and rejects invalid values', () => {
+    const p = completePackage(),
+      prices = editorData(p).servicePrices
+    prices[0].amount = 0
+    expect(servicePricing(p).total).toBe(1035)
+    for (const amount of [-1, NaN, Infinity]) {
+      prices[0].amount = amount
+      expect(packageSchema.safeParse(p).success).toBe(false)
+      expect(servicePricing(p).total).toBeNull()
+    }
+  })
+  it('removes a hotel stay without room options or occupancy links', () => {
+    const p = completePackage()
+    const changed = removeStay(p, 'stay-a')
+    expect(editorData(changed).stays.map((stay) => stay.id)).toEqual(['stay-b'])
+    expect(editorData(changed)).not.toHaveProperty('options')
+  })
+  it('validates hotel date ranges and reports overlapping stays', () => {
+    const p = completePackage(),
+      editor = editorData(p)
+    editor.stays[0].checkOut = '2027-05-10'
     expect(packageSchema.safeParse(p).success).toBe(false)
-    delete editorData(p).options[0].selections.invalid
-    p.name = '<script>alert(1)</script>'
-    expect(packageSchema.safeParse(p).success).toBe(false)
+    editor.stays[0].checkOut = '2027-05-14'
+    expect(packageSchema.safeParse(p).success).toBe(true)
+    expect(packageWarnings(p)).toContain('overlap')
   })
 })
 
@@ -169,8 +92,8 @@ it('rejects domestic packages and defaults new drafts to international pilgrims'
   )
 })
 
-it('starts new packages in calculation mode without requiring a pre-approved selling price', () => {
+it('starts new packages with ten required and three optional service prices', () => {
   const p = newPackage()
-  expect(editorData(p).mode).toBe('cost_draft')
+  expect(editorData(p).servicePrices).toHaveLength(13)
   expect(packageSchema.safeParse({ ...p, name: 'Calculated draft' }).success).toBe(true)
 })

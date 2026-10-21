@@ -7,7 +7,6 @@ import { usePackageStore, usePackageStorageStatus } from '../hooks/usePackageSto
 import { useUnsavedPackage } from '../hooks/useUnsavedPackage'
 import { packageSchema } from '../validations/schemas'
 import { newPackage, PACKAGE_SEASON, PACKAGE_CURRENCY } from '../utils/editor'
-import { editorData } from '../utils/finance'
 import { PageHeader } from '@/modules/core/components/PageHeader'
 import { PackageGeneralStep } from '../components/PackageGeneralStep'
 import { PackageStaysStep } from '../components/PackageStaysStep'
@@ -93,7 +92,6 @@ export default function PackageEditorPage() {
         }
       />
     )
-  const e = editorData(item)
   const canPublish = packageSchema.safeParse({ ...item, status: 'available' }).success
   return (
     <div className="pb-10">
@@ -159,7 +157,7 @@ export default function PackageEditorPage() {
       >
         {step === 0 && <PackageGeneralStep item={item} onChange={change} providers={providers} />}{' '}
         {step === 1 && <PackageStaysStep item={item} onChange={change} />}{' '}
-        {step === 2 && <PackageServicesStep item={item} onChange={change} providers={providers} />}{' '}
+        {step === 2 && <PackageServicesStep item={item} onChange={change} />}{' '}
         {step === 3 && <PackageFinancialStep item={item} onChange={change} />}{' '}
         {step === 4 && (
           <PackageDetails
@@ -180,21 +178,13 @@ export default function PackageEditorPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => save('draft')}>{t('editor.saveDraft')}</Button>
-          {e.mode === 'approved_price' && (
-            <Button type="primary" disabled={!canPublish} onClick={() => save('available')}>
-              {t('editor.saveAvailable')}
-            </Button>
-          )}
+          <Button type="primary" disabled={!canPublish} onClick={() => save('available')}>
+            {t('editor.saveAvailable')}
+          </Button>
         </div>
       </div>
       <p className="mt-3 text-sm text-muted">
-        {t(
-          e.mode === 'cost_draft'
-            ? 'editor.costNote'
-            : canPublish
-              ? 'editor.ready'
-              : 'editor.availabilityHint'
-        )}
+        {t(canPublish ? 'editor.ready' : 'editor.availabilityHint')}
       </p>
     </div>
   )

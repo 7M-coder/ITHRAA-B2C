@@ -5,7 +5,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import { packageSchema } from '../validations/schemas'
 import { plainDescription, descriptionDocumentSchema } from '../utils/description'
 import { newPackage } from '../utils/editor'
-import { newStay } from '../utils/finance'
 import { usePackageStore, PACKAGE_STORAGE_KEY } from '../hooks/usePackageStore'
 
 describe('formatted package descriptions', () => {
@@ -74,12 +73,10 @@ describe('formatted package descriptions', () => {
       '<script>text</script>'
     )
   })
-  it('offers only double, triple and quadruple rooms for new housing', () => {
-    expect(newStay().rooms.map((r) => r.occupancy)).toEqual([2, 3, 4])
-  })
   it.each([
     'luxury',
     'luxury_transitional',
+    'transitional',
     'premium',
     'premium_transitional',
     'basic',

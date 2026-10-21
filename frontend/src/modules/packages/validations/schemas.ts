@@ -13,6 +13,11 @@ import { isSeasonDate } from '../utils/dates'
 import { validTransport } from '../utils/transport'
 import { readiness } from '../utils/finance'
 import { descriptionDocumentSchema, descriptionTextSchema } from '../utils/description'
+import {
+  OPTIONAL_SERVICE_PRICE_IDS,
+  REQUIRED_SERVICE_PRICE_IDS,
+  SERVICE_PRICE_IDS
+} from '../utils/servicePricing'
 export {
   createPackageFieldRule,
   packageLongTextSchema,
@@ -35,22 +40,16 @@ const date = z
     'invalidDate'
   )
 const amount = z.number().finite().min(0).max(1e10).nullable()
-const tax = z.enum(['included', 'excluded', 'unknown'])
-const room = z.object({
-  occupancy: z.number().int().min(1).max(4),
-  enabled: z.boolean(),
-  beds: z.number().int().min(0).nullable(),
-  amount,
-  basis: z.enum(['room_night', 'bed_stay', 'bed_night']),
-  legacyAmount: amount.optional(),
-  legacyBasis: z.enum(['room_night', 'bed_stay']).optional(),
-  tax
-})
 const stay = z
   .object({
     id: z.string().min(1),
     city: text,
     hotel: text,
+    roomTypes: z
+      .array(z.union([z.literal(2), z.literal(3), z.literal(4)]))
+      .max(3)
+      .refine((values) => new Set(values).size === values.length, 'duplicateIds')
+      .optional(),
     kind: z.enum(['primary', 'transitional']),
     checkIn: date,
     checkOut: date,
@@ -60,8 +59,7 @@ const stay = z
       .array(z.object({ id: z.string().min(1), checkIn: date, checkOut: date }))
       .min(1)
       .max(30)
-      .optional(),
-    rooms: z.array(room)
+      .optional()
   })
   .superRefine((s, ctx) => {
     const periods = stayPeriods(s)
@@ -75,33 +73,23 @@ const stay = z
     })
     if (s.checkIn && s.checkOut && s.checkOut <= s.checkIn)
       ctx.addIssue({ code: 'custom', path: ['checkOut'], message: 'dateRange' })
-    if (new Set(s.rooms.map((r) => r.occupancy)).size !== s.rooms.length)
-      ctx.addIssue({ code: 'custom', message: 'duplicateIds' })
   })
-const option = z.object({
-  needsReview: z.boolean().optional(),
-  id: z.string().min(1),
-  name: text,
-  selections: z.record(z.number().int().min(1).max(4)),
-  approvedAmount: amount,
-  tax,
-  notes: text
+const servicePrice = z.object({
+  id: z.enum(
+    SERVICE_PRICE_IDS as [(typeof SERVICE_PRICE_IDS)[number], ...typeof SERVICE_PRICE_IDS]
+  ),
+  amount,
+  enabled: z.boolean()
 })
-export const editorSchema = z.object({
-  bedTaxes: z
-    .object({
-      vat: z.number().finite().min(0).max(100),
-      accommodation: z.number().finite().min(0).max(100),
-      collection: z.number().finite().min(0).max(100),
-      city: z.number().finite().min(0).max(100)
-    })
-    .optional(),
+export const editorObjectSchema = z.object({
+  previousPricing: z.record(z.unknown()).optional(),
   category: z.enum([
     '',
     'economy',
     'standard',
     'premium',
     'luxury',
+    'transitional',
     'luxury_transitional',
     'premium_transitional',
     'basic',
@@ -109,7 +97,7 @@ export const editorSchema = z.object({
   ]),
   capacity: z.number().int().positive().nullable(),
   stays: z.array(stay),
-  options: z.array(option),
+  servicePrices: z.array(servicePrice).length(SERVICE_PRICE_IDS.length),
   services: z.array(
     z.object({
       id: z.string().min(1),
@@ -121,24 +109,29 @@ export const editorSchema = z.object({
       included: z.boolean()
     })
   ),
-  mode: z.enum(['approved_price', 'cost_draft']),
-  costs: z.array(
-    z.object({
-      id: z.string().min(1),
-      name: text,
-      amount,
-      basis: z.enum(['person', 'group']),
-      divisor: z.number().int().positive().nullable(),
-      optionId: z.string().nullable(),
-      tax
-    })
-  ),
-  approval: z.object({ by: text, date, reference: text }),
-  legacyPrice: z.number().finite().min(0).optional(),
   needsReview: z.boolean()
+})
+export const editorSchema = editorObjectSchema.superRefine((editor, ctx) => {
+  const ids = editor.servicePrices.map((service) => service.id)
+  if (
+    new Set(ids).size !== SERVICE_PRICE_IDS.length ||
+    SERVICE_PRICE_IDS.some((id) => !ids.includes(id))
+  )
+    ctx.addIssue({ code: 'custom', path: ['servicePrices'], message: 'invalidServicePrices' })
+  for (const service of editor.servicePrices) {
+    if (REQUIRED_SERVICE_PRICE_IDS.includes(service.id) && !service.enabled)
+      ctx.addIssue({ code: 'custom', path: ['servicePrices'], message: 'requiredServiceDisabled' })
+    if (
+      OPTIONAL_SERVICE_PRICE_IDS.includes(service.id) &&
+      !service.enabled &&
+      service.amount !== null
+    )
+      ctx.addIssue({ code: 'custom', path: ['servicePrices'], message: 'disabledServicePriced' })
+  }
 })
 export const packageRecordSchema = legacyPackageSchema
   .innerType()
+  .omit({ price: true })
   .extend({
     pilgrimType: z.literal('international'),
     description: descriptionTextSchema,
@@ -148,7 +141,6 @@ export const packageRecordSchema = legacyPackageSchema
     endDate: date,
     editor: editorSchema,
     services: packageServicesSchema,
-    price: z.number().finite().min(0),
     currency: currencyCodeSchema,
     name: requiredPackageTextSchema
   })
@@ -156,12 +148,7 @@ export const packageRecordSchema = legacyPackageSchema
     if (p.startDate && p.endDate && p.endDate < p.startDate)
       ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'dateRange' })
     const e = p.editor
-    for (const [key, list] of Object.entries({
-      stays: e.stays,
-      options: e.options,
-      costs: e.costs,
-      services: e.services
-    }))
+    for (const [key, list] of Object.entries({ stays: e.stays, services: e.services }))
       if (new Set(list.map((v) => v.id)).size !== list.length)
         ctx.addIssue({ code: 'custom', path: ['editor', key], message: 'duplicateIds' })
     e.services.forEach((s, i) => {
@@ -186,24 +173,6 @@ export const packageRecordSchema = legacyPackageSchema
         )
       )
         ctx.addIssue({ code: 'custom', path: ['editor', 'stays', i], message: 'stayOutside' })
-    })
-    e.options.forEach((o, i) => {
-      for (const [id, occupancy] of Object.entries(o.selections)) {
-        if (
-          !e.stays.some(
-            (s) => s.id === id && s.rooms.some((r) => r.enabled && r.occupancy === occupancy)
-          )
-        )
-          ctx.addIssue({
-            code: 'custom',
-            path: ['editor', 'options', i],
-            message: 'invalidSelection'
-          })
-      }
-    })
-    e.costs.forEach((c, i) => {
-      if (c.optionId && !e.options.some((o) => o.id === c.optionId))
-        ctx.addIssue({ code: 'custom', path: ['editor', 'costs', i], message: 'invalidSelection' })
     })
     if (p.status === 'available' && readiness(p).length)
       ctx.addIssue({ code: 'custom', path: ['status'], message: 'notReady' })

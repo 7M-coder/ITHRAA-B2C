@@ -1,29 +1,13 @@
-export type TaxTreatment = 'included' | 'excluded' | 'unknown'
-export type PricingMode = 'approved_price' | 'cost_draft'
-export interface StayRoom {
-  occupancy: number
-  enabled: boolean
-  beds: number | null
-  amount: number | null
-  basis: 'room_night' | 'bed_stay' | 'bed_night'
-  legacyAmount?: number | null
-  legacyBasis?: 'room_night' | 'bed_stay'
-  tax: TaxTreatment
-}
 export interface StayPeriod {
   id: string
   checkIn: string
   checkOut: string
 }
-export interface BedTaxRates {
-  vat: number
-  accommodation: number
-  collection: number
-  city: number
-}
 export type TransportType = 'intercity' | 'mashair'
 export type TransportMode = 'bus' | 'haramain_train' | 'private_car' | 'mashair_train'
+export type RoomType = 2 | 3 | 4
 export interface PackageStay {
+  roomTypes?: RoomType[]
   periods?: StayPeriod[]
   id: string
   city: string
@@ -33,25 +17,25 @@ export interface PackageStay {
   checkOut: string
   contractRef: string
   notes: string
-  rooms: StayRoom[]
 }
-export interface OccupancyOption {
-  needsReview?: boolean
-  id: string
-  name: string
-  selections: Record<string, number>
-  approvedAmount: number | null
-  tax: TaxTreatment
-  notes: string
-}
-export interface CostItem {
-  id: string
-  name: string
+export type ServicePriceId =
+  | 'intercityBus'
+  | 'intercityTrain'
+  | 'makkahMashairBus'
+  | 'mashairTrain'
+  | 'prayerBus'
+  | 'enrichmentVisitsBus'
+  | 'meals'
+  | 'baggageHandling'
+  | 'giftPackage'
+  | 'simCard'
+  | 'wheelchairCompanion'
+  | 'zamzam'
+  | 'operatingFees'
+export interface ServicePrice {
+  id: ServicePriceId
   amount: number | null
-  basis: 'person' | 'group'
-  divisor: number | null
-  optionId: string | null
-  tax: TaxTreatment
+  enabled: boolean
 }
 export interface ServiceItem {
   providerId?: string
@@ -63,24 +47,21 @@ export interface ServiceItem {
   included: boolean
 }
 export interface PackageEditorData {
-  bedTaxes?: BedTaxRates
+  previousPricing?: Record<string, unknown>
   category:
     | ''
     | 'economy'
     | 'standard'
     | 'premium'
     | 'luxury'
+    | 'transitional'
     | 'luxury_transitional'
     | 'premium_transitional'
     | 'basic'
     | 'basic_transitional'
   capacity: number | null
   stays: PackageStay[]
-  options: OccupancyOption[]
   services: ServiceItem[]
-  mode: PricingMode
-  costs: CostItem[]
-  approval: { by: string; date: string; reference: string }
-  legacyPrice?: number
+  servicePrices: ServicePrice[]
   needsReview: boolean
 }

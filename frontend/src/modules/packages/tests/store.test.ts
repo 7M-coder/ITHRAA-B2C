@@ -99,7 +99,8 @@ describe('persisted package state', () => {
 })
 
 it('migrates v1 without changing IDs, provider relationships or historical block links', async () => {
-  const old = seedPackageData()
+  const seed = seedPackageData()
+  const old = { ...seed, packages: seed.packages.map((item) => ({ ...item, price: 1400 })) }
   localStorage.setItem(KEY, JSON.stringify({ state: old, version: 1 }))
   const { usePackageStore } = await import('../hooks/usePackageStore')
   const current = usePackageStore.getState()
@@ -107,7 +108,8 @@ it('migrates v1 without changing IDs, provider relationships or historical block
   expect(current.packages[0].status).toBe('draft')
   expect(current.blocks).toEqual(old.blocks)
   expect(current.providers).toEqual(old.providers)
-  expect(editorData(current.packages[0]).legacyPrice).toBe(old.packages[0].price)
+  expect(editorData(current.packages[0]).servicePrices).toHaveLength(13)
+  expect('price' in current.packages[0]).toBe(false)
   expect(current.packages[0].services).toEqual(old.packages[0].services)
   expect(() =>
     current.saveBlock({
@@ -120,24 +122,44 @@ it('migrates v1 without changing IDs, provider relationships or historical block
     })
   ).toThrow('packageUnavailable')
   current.saveBlock({ ...current.blocks[0], name: 'Existing assignment preserved' })
-  expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(4)
+  expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(8)
 })
-it('retains both financial modes and stable references after a reload', async () => {
+it('migrates v5 by removing room options and room taxes while retaining service prices and hotel stays', () => {
+  const seed = seedPackageData()
+  const packageData = completePackage()
+  packageData.id = seed.packages[0].id
+  const oldEditor = {
+    ...editorData(packageData),
+    bedTaxes: { vat: 15, accommodation: 5, collection: 2, city: 3 },
+    stays: editorData(packageData).stays.map((stay) => ({
+      ...stay,
+      rooms: [
+        { occupancy: 4, enabled: true, beds: 46, amount: 100, basis: 'bed_night', tax: 'excluded' }
+      ]
+    })),
+    options: [{ id: 'old-option', name: 'Old option', selections: {}, notes: '' }]
+  }
+  const oldPackage = { ...packageData, editor: oldEditor }
+  const migrated = migratePackageState({ ...seed, packages: [oldPackage] }, 5)
+  const result = migrated.packages[0]
+  expect(result.editor?.stays).toHaveLength(2)
+  expect(result.editor?.stays[0]).not.toHaveProperty('rooms')
+  expect(result.editor).not.toHaveProperty('options')
+  expect(result.editor).not.toHaveProperty('bedTaxes')
+  expect(editorData(result).servicePrices).toEqual(editorData(packageData).servicePrices)
+  expect(migrated.blocks).toEqual(seed.blocks)
+})
+it('persists service prices and stable package references after a reload', async () => {
   let mod = await import('../hooks/usePackageStore')
   const p = completePackage()
   p.status = 'draft'
-  editorData(p).mode = 'cost_draft'
+  editorData(p).servicePrices[0].amount = 123
   mod.usePackageStore.getState().savePackage(p)
   vi.resetModules()
   mod = await import('../hooks/usePackageStore')
   const saved = mod.usePackageStore.getState().packages.find((x) => x.id === p.id)!
   expect(editorData(saved)).toEqual(editorData(p))
-  editorData(saved).mode = 'approved_price'
-  mod.usePackageStore.getState().savePackage(saved)
-  expect(
-    editorData(mod.usePackageStore.getState().packages.find((x) => x.id === p.id)!).options[0]
-      .approvedAmount
-  ).toBe(1200)
+  expect(editorData(saved).servicePrices[0].amount).toBe(123)
 })
 it('preserves unsupported future-version storage', async () => {
   const raw = JSON.stringify({ version: 99, state: seedPackageData() })
@@ -173,10 +195,42 @@ it.each([1, 2])(
     const seed = seedPackageData()
     const packages =
       version === 1
-        ? seed.packages
+        ? seed.packages.map((p) => ({ ...p, price: 1400 }))
         : seed.packages.map((p) => ({
             ...p,
-            editor: { ...editorData(completePackage()), needsReview: true },
+            price: 1400,
+            editor: {
+              ...editorData(completePackage()),
+              servicePrices: undefined,
+              bedTaxes: { vat: 15, accommodation: 5, collection: 2, city: 3 },
+              mode: 'cost_draft',
+              costs: [],
+              approval: { by: '', date: '', reference: '' },
+              stays: editorData(completePackage()).stays.map((stay) => ({
+                ...stay,
+                rooms: [
+                  {
+                    occupancy: 4,
+                    enabled: true,
+                    beds: 46,
+                    amount: 100,
+                    basis: 'bed_night',
+                    tax: 'excluded'
+                  }
+                ]
+              })),
+              options: [
+                {
+                  id: 'legacy-option',
+                  name: 'Legacy',
+                  selections: {},
+                  approvedAmount: null,
+                  tax: 'unknown' as const,
+                  notes: ''
+                }
+              ],
+              needsReview: true
+            },
             status: 'draft' as const
           }))
     const old = {
@@ -194,39 +248,26 @@ it.each([1, 2])(
     expect(current.blocks.map((b) => b.packageId)).toEqual(old.blocks.map((b) => b.packageId))
     expect(current.providers).toEqual(old.providers)
     expect(current.packages[0].services).toEqual(old.packages[0].services)
-    if (version === 2) expect(current.packages[0].editor).toEqual(old.packages[0].editor)
-    expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(4)
+    if (version === 2) expect(editorData(current.packages[0]).servicePrices).toHaveLength(13)
+    expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(8)
   }
 )
 
-it('persists multiple periods, transport selections and bed-night charges across reloads', async () => {
+it('persists hotel periods, transport selections and service prices across reloads', async () => {
   const { withPeriods } = await import('../utils/periods')
-  const { optionCost } = await import('../utils/finance')
+  const { servicePricing } = await import('../utils/finance')
   let mod = await import('../hooks/usePackageStore')
   const p = completePackage()
   p.status = 'draft'
   p.providerId = ''
   const e = editorData(p)
-  e.mode = 'cost_draft'
   e.stays = [
-    withPeriods(
-      {
-        ...e.stays[0],
-        rooms: e.stays[0].rooms.map((room) => ({
-          ...room,
-          basis: 'bed_night',
-          amount: 100,
-          tax: 'excluded'
-        }))
-      },
-      [
-        { id: 'period-one', checkIn: '2027-05-10', checkOut: '2027-05-12' },
-        { id: 'period-two', checkIn: '2027-05-13', checkOut: '2027-05-15' },
-        { id: 'period-three', checkIn: '2027-05-17', checkOut: '2027-05-20' }
-      ]
-    )
+    withPeriods(e.stays[0], [
+      { id: 'period-one', checkIn: '2027-05-10', checkOut: '2027-05-12' },
+      { id: 'period-two', checkIn: '2027-05-13', checkOut: '2027-05-15' },
+      { id: 'period-three', checkIn: '2027-05-17', checkOut: '2027-05-20' }
+    ])
   ]
-  e.options[0].selections = { 'stay-a': 2 }
   e.services = [
     {
       id: 'transport-one',
@@ -243,5 +284,106 @@ it('persists multiple periods, transport selections and bed-night charges across
   const saved = mod.usePackageStore.getState().packages.find((item) => item.id === p.id)!
   expect(saved.editor).toEqual(e)
   expect(saved.providerId).toBe('')
-  expect(optionCost(saved, editorData(saved).options[0]).total).toBe(875)
+  expect(servicePricing(saved).total).toBe(1150)
+})
+
+it('migrates main v4 pricing without losing rich descriptions, categories, providers or archived prices', async () => {
+  const seed = seedPackageData()
+  const current = completePackage()
+  const document = {
+    type: 'doc',
+    content: [{ type: 'paragraph', content: [{ type: 'text', text: 'وصف منسق' }] }]
+  }
+  const oldEditor = {
+    category: 'luxury_transitional',
+    capacity: 46,
+    needsReview: false,
+    bedTaxes: { vat: 15, accommodation: 5, collection: 2, city: 3 },
+    stays: current.editor!.stays.map((stay) => ({
+      ...stay,
+      rooms: [
+        { occupancy: 2, enabled: true, beds: 46, amount: 100, basis: 'bed_night', tax: 'excluded' }
+      ]
+    })),
+    services: [
+      {
+        id: 'transport-old',
+        category: 'transportation',
+        transportType: 'intercity',
+        transportMode: 'bus',
+        providerId: seed.providers[0].id,
+        description: 'Transfer',
+        included: true
+      }
+    ],
+    mode: 'approved_price',
+    costs: [
+      {
+        id: 'bus',
+        name: 'Bus',
+        amount: 5000,
+        basis: 'group',
+        divisor: 46,
+        optionId: null,
+        tax: 'included'
+      }
+    ],
+    options: [
+      {
+        id: 'option-old',
+        name: 'Original option',
+        selections: { 'stay-a': 2, 'stay-b': 2 },
+        approvedAmount: 1400,
+        tax: 'included',
+        notes: ''
+      }
+    ],
+    approval: { by: 'Finance', date: '2027-01-01', reference: 'REF' }
+  }
+  const old = {
+    ...seed,
+    packages: [
+      {
+        ...current,
+        id: seed.packages[0].id,
+        description: 'وصف منسق',
+        descriptionDocument: document,
+        price: 1400,
+        editor: oldEditor
+      }
+    ]
+  }
+  const raw = JSON.stringify({ state: old, version: 4 })
+  localStorage.setItem(KEY, raw)
+  let mod = await import('../hooks/usePackageStore')
+  expect(mod.usePackageStorageStatus.getState().error).toBe(false)
+  let saved = mod.usePackageStore.getState().packages[0]
+  expect(saved).toMatchObject({
+    id: old.packages[0].id,
+    status: 'draft',
+    description: 'وصف منسق',
+    descriptionDocument: document
+  })
+  expect(saved.editor).toMatchObject({
+    category: 'luxury_transitional',
+    services: oldEditor.services
+  })
+  expect(saved.editor!.servicePrices.every((price) => price.amount === null)).toBe(true)
+  expect(saved.editor!.previousPricing).toMatchObject({
+    price: 1400,
+    costs: oldEditor.costs,
+    options: oldEditor.options,
+    approval: oldEditor.approval,
+    bedTaxes: oldEditor.bedTaxes
+  })
+  expect((saved.editor!.previousPricing!.rooms as Array<{ rooms: unknown }>)[0].rooms).toEqual(
+    oldEditor.stays[0].rooms
+  )
+  expect(mod.usePackageStore.getState().blocks).toEqual(old.blocks)
+  expect(JSON.parse(localStorage.getItem(KEY)!).version).toBe(8)
+  vi.resetModules()
+  mod = await import('../hooks/usePackageStore')
+  saved = mod.usePackageStore.getState().packages[0]
+  expect(saved.editor!.previousPricing).toMatchObject({ options: oldEditor.options })
+  expect(saved.descriptionDocument).toEqual(document)
 })

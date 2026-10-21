@@ -14,7 +14,6 @@ export function newPackage(): HajjPackage {
     providerId: '',
     startDate: '',
     endDate: '',
-    price: 0,
     currency: PACKAGE_CURRENCY,
     bookingPolicy: '',
     cancellationPolicy: '',
