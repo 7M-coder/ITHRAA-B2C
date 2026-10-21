@@ -38,6 +38,7 @@ describe('persisted demo state', () => {
   )
   it('enforces assignment relationships and one-way transitions', async () => {
     const { useDemoStore } = await import('../hooks/useDemoStore')
+    useDemoStore.setState({ assets: seedData().assets })
     const store = useDemoStore.getState()
     expect(() => store.addAsset({ ...store.assets[0], id: 'new', employeeId: 'missing' })).toThrow()
     store.changeAssetStatus('asset-1', 'Returned')
@@ -46,6 +47,7 @@ describe('persisted demo state', () => {
   })
   it('blocks unsettled clearance, persists issuance, and prevents duplicate issuance and new custody', async () => {
     const { useDemoStore } = await import('../hooks/useDemoStore')
+    useDemoStore.setState({ assets: seedData().assets })
     expect(useDemoStore.getState().issueClearance('employee-7')).toBe(false)
     expect(useDemoStore.getState().issueClearance('employee-8')).toBe(true)
     expect(useDemoStore.getState().issueClearance('employee-8')).toBe(false)

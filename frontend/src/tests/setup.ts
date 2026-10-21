@@ -3,19 +3,14 @@ import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import { transferableAbortController } from 'node:util'
 import en from '../../public/locales/en/common.json'
 import ar from '../../public/locales/ar/common.json'
 import employeesEn from '../../public/locales/en/employees.json'
 import employeesAr from '../../public/locales/ar/employees.json'
 import packagesEn from '../../public/locales/en/packages.json'
 import packagesAr from '../../public/locales/ar/packages.json'
-import contractsEn from '../../public/locales/en/contracts.json'
-import contractsAr from '../../public/locales/ar/contracts.json'
-// React Router's Node Request requires signals from Node's AbortController.
-const nativeAbortController = transferableAbortController()
-vi.stubGlobal('AbortController', nativeAbortController.constructor)
-vi.stubGlobal('AbortSignal', nativeAbortController.signal.constructor)
+import custodyAr from '../../public/locales/ar/custody.json'
+import custodyEn from '../../public/locales/en/custody.json'
 // Node 25 exposes a partial global localStorage that shadows jsdom's Storage.
 const localStorageData = new Map<string, string>()
 Object.defineProperties(window.Storage.prototype, {
@@ -42,10 +37,10 @@ await i18n.use(initReactI18next).init({
   lng: 'ar',
   fallbackLng: 'ar',
   resources: {
-    en: { common: en, packages: packagesEn, employees: employeesEn, contracts: contractsEn },
-    ar: { common: ar, packages: packagesAr, employees: employeesAr, contracts: contractsAr }
+    en: { common: en, packages: packagesEn, employees: employeesEn, custody: custodyEn },
+    ar: { common: ar, packages: packagesAr, employees: employeesAr, custody: custodyAr }
   },
-  ns: ['common', 'packages', 'employees', 'contracts'],
+  ns: ['common', 'packages', 'employees', 'custody'],
   defaultNS: 'common',
   fallbackNS: 'common',
   interpolation: { escapeValue: false }

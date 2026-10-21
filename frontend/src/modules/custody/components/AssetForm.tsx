@@ -1,92 +1,113 @@
 import { useEffect } from 'react'
-import { App, Form, Input, Modal, Select } from 'antd'
+import { Form, Input, InputNumber, Modal, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useDemoStore } from '../../core/hooks/useDemoStore'
 import { isoDate } from '../../core/utils/domain'
-import { assetSchema, fieldRule } from '../../core/validations/schemas'
-import type { Asset } from '../../core/types/domain'
+import { fieldRule } from '../../core/validations/schemas'
+import { custodyRequired, custodyMoney, custodyDate } from '../validations/schemas'
+import { inventoryAvailable } from '../utils/workflow'
+import type { CustodyCommand } from '../types/workflow'
 interface Props {
   open: boolean
   onClose: () => void
+  onSave: (command: CustodyCommand) => void
 }
-/** Assigns custody to an employee by stable ID. @param props - Dialog state. @returns Assignment dialog. */
-export function AssetForm({ open, onClose }: Props) {
+interface Values {
+  employeeId: string
+  kind: 'financial' | 'physical'
+  description: string
+  dueDate: string
+  amount: number
+  inventoryId: string
+}
+/** Records a custody as open immediately. @param props - Dialog callbacks. @returns Custody creation form. */
+export function AssetForm({ open, onClose, onSave }: Props) {
   const { t } = useTranslation(['custody', 'common'])
-  const [form] = Form.useForm<Asset>()
-  const { message } = App.useApp()
+  const [form] = Form.useForm<Values>()
+  const kind = Form.useWatch('kind', form)
   const employees = useDemoStore((s) => s.employees)
+  const assets = useDemoStore((s) => s.assets)
+  const inventory = useDemoStore((s) => s.inventory)
   const clearances = useDemoStore((s) => s.clearances)
-  const add = useDemoStore((s) => s.addAsset)
-  const eligible = employees.filter((e) => !clearances.some((c) => c.employeeId === e.id))
+  const eligible = employees.filter(
+    (e) => e.employmentStatus !== 'Terminated' && !clearances.some((c) => c.employeeId === e.id)
+  )
   useEffect(() => {
     if (open) {
+      const due = new Date()
+      due.setDate(due.getDate() + 7)
       form.resetFields()
-      form.setFieldsValue({ type: 'Laptop', assignedAt: isoDate(), serialNumber: '' })
+      form.setFieldsValue({ kind: 'financial', dueDate: isoDate(due) })
     }
   }, [open, form])
-  const submit = (values: Asset) => {
-    try {
-      add({
-        ...values,
-        id: crypto.randomUUID(),
-        status: 'Active',
-        serialNumber: values.serialNumber || ''
-      })
-      void message.success(t('saved'))
-      onClose()
-    } catch {
-      void message.error(t('saveError'))
-    }
-  }
   return (
     <Modal
       open={open}
-      title={t('assignAsset')}
+      title={t('wf.create')}
       onCancel={onClose}
       onOk={() => form.submit()}
+      okText={t('wf.createDraft')}
+      cancelText={t('wf.cancel')}
       okButtonProps={{ disabled: !eligible.length }}
-      okText={t('save')}
-      cancelText={t('cancel')}
+      destroyOnHidden
     >
-      <Form form={form} layout="vertical" onFinish={submit}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) =>
+          onSave({
+            type: 'create',
+            ...values,
+            amount: values.kind === 'financial' ? values.amount : null,
+            id: crypto.randomUUID()
+          })
+        }
+      >
+        <Form.Item name="kind" label={t('wf.kind')}>
+          <Select
+            options={['financial', 'physical'].map((value) => ({ value, label: t(`wf.${value}`) }))}
+          />
+        </Form.Item>
         <Form.Item
           name="employeeId"
-          label={t('employee')}
-          rules={[{ required: true, message: t('required') }]}
+          label={t('wf.employee')}
+          rules={[{ required: true, message: t('wf.required') }]}
         >
           <Select
             showSearch
             optionFilterProp="label"
-            placeholder={t('selectEmployee')}
-            notFoundContent={t('noAssignable')}
             options={eligible.map((e) => ({ value: e.id, label: e.fullName }))}
-          />
-        </Form.Item>
-        <Form.Item name="type" label={t('assetType')}>
-          <Select
-            options={['Car', 'Laptop', 'Advance'].map((value) => ({ value, label: t(value) }))}
           />
         </Form.Item>
         <Form.Item
           name="description"
-          label={t('description')}
-          rules={[fieldRule(assetSchema.shape.description, t)]}
+          label={t('wf.purpose')}
+          rules={[fieldRule(custodyRequired, t)]}
         >
-          <Input />
+          <Input aria-label={t('wf.purpose')} />
         </Form.Item>
-        <Form.Item
-          name="serialNumber"
-          label={`${t('serialNumber')} (${t('optional')})`}
-          rules={[fieldRule(assetSchema.shape.serialNumber, t)]}
-        >
-          <Input dir="ltr" />
-        </Form.Item>
-        <Form.Item
-          name="assignedAt"
-          label={t('assignedAt')}
-          rules={[fieldRule(assetSchema.shape.assignedAt, t)]}
-        >
-          <Input type="date" />
+        {kind === 'financial' ? (
+          <Form.Item name="amount" label={t('wf.amount')} rules={[fieldRule(custodyMoney, t)]}>
+            <InputNumber aria-label={t('wf.amount')} className="w-full!" min={0.01} precision={2} />
+          </Form.Item>
+        ) : (
+          <Form.Item
+            name="inventoryId"
+            label={t('wf.inventoryUnit')}
+            rules={[{ required: true, message: t('wf.required') }]}
+          >
+            <Select
+              showSearch
+              optionFilterProp="label"
+              notFoundContent={t('wf.noInventory')}
+              options={(inventory ?? [])
+                .filter((i) => inventoryAvailable(assets, i))
+                .map((i) => ({ value: i.id, label: `${i.name} · ${i.serial}` }))}
+            />
+          </Form.Item>
+        )}
+        <Form.Item name="dueDate" label={t('wf.dueDate')} rules={[fieldRule(custodyDate, t)]}>
+          <Input aria-label={t('wf.dueDate')} type="date" min={isoDate()} />
         </Form.Item>
       </Form>
     </Modal>

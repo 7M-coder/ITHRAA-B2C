@@ -6,6 +6,9 @@ import type { Asset, AssetStatus, DemoData, Employee } from '../types/domain'
 import { employeeSchema, employeeCreateSchema, assetSchema } from '../validations/schemas'
 import { canClear } from '../utils/domain'
 import { seedData } from '../utils/seed'
+import { inventorySchema } from '../../custody/validations/schemas'
+import { applyCustodyCommand } from '../../custody/utils/workflow'
+import type { CustodyCommand, CustodyActor } from '../../custody/types/workflow'
 export const STORAGE_KEY = 'ithraa-hr-demo-v1'
 export const useStorageStatus = create<{ error: boolean }>(() => ({ error: false }))
 let blocked = false
@@ -23,6 +26,7 @@ const storage: StateStorage = {
     if (blocked) return
     try {
       localStorage.setItem(name, value)
+      useStorageStatus.setState({ error: false })
     } catch {
       useStorageStatus.setState({ error: true })
     }
@@ -38,6 +42,7 @@ const storage: StateStorage = {
 const persistedSchema = z
   .object({
     employees: z.array(employeeSchema),
+    inventory: z.array(inventorySchema).default([]),
     assets: z.array(assetSchema),
     clearances: z.array(z.object({ employeeId: z.string(), issuedAt: z.string() }))
   })
@@ -50,8 +55,31 @@ const persistedSchema = z
       data.clearances.some((c) => !ids.has(c.employeeId))
     )
       ctx.addIssue({ code: 'custom', message: 'Invalid relationships' })
+    for (const asset of data.assets) {
+      const w = asset.workflow
+      if (!w) continue
+      if (
+        (asset.type === 'Advance' && w.amount === null) ||
+        (asset.type !== 'Advance' &&
+          (w.inventoryId
+            ? !data.inventory.some((i) => i.id === w.inventoryId)
+            : !(
+                w.phase === 'closed' &&
+                w.history.some((h) => ['employeeReturned', 'managerReceived'].includes(h.action))
+              ))) ||
+        ['closed', 'cancelled'].includes(w.phase) !== (asset.status === 'Returned') ||
+        new Set(w.purchases.map((p) => p.id)).size !== w.purchases.length
+      )
+        ctx.addIssue({ code: 'custom', message: 'Invalid custody' })
+    }
+    if (
+      new Set(data.inventory.map((i) => i.id)).size !== data.inventory.length ||
+      new Set(data.inventory.map((i) => i.serial.toLowerCase())).size !== data.inventory.length
+    )
+      ctx.addIssue({ code: 'custom', message: 'Invalid inventory' })
   })
 interface DemoStore extends DemoData {
+  custodyAction: (command: CustodyCommand, actor: CustodyActor) => void
   saveEmployee: (employee: Employee) => void
   addAsset: (asset: Asset) => void
   changeAssetStatus: (id: string, status: Exclude<AssetStatus, 'Active'>) => void
@@ -62,6 +90,9 @@ export const useDemoStore = create<DemoStore>()(
   persist(
     (set, get) => ({
       ...seedData(),
+      assets: [],
+      inventory: [],
+      custodyAction: (command, actor) => set(applyCustodyCommand(get(), command, actor)),
       saveEmployee: (employee) => {
         const schema = get().employees.some((e) => e.id === employee.id)
           ? employeeSchema
@@ -75,6 +106,7 @@ export const useDemoStore = create<DemoStore>()(
       },
       addAsset: (asset) => {
         const value = assetSchema.parse(asset)
+        if (value.workflow) throw new Error('Use custody workflow')
         const s = get()
         if (
           !s.employees.some((e) => e.id === value.employeeId) ||
@@ -85,6 +117,7 @@ export const useDemoStore = create<DemoStore>()(
         set({ assets: [...s.assets, { ...value, status: 'Active' }] })
       },
       changeAssetStatus: (id, status) => {
+        if (get().assets.find((a) => a.id === id)?.workflow) throw new Error('Use custody workflow')
         if (status !== 'Returned' && status !== 'Lost') return
         set((s) => ({
           assets: s.assets.map((a) => (a.id === id && a.status === 'Active' ? { ...a, status } : a))
@@ -103,9 +136,20 @@ export const useDemoStore = create<DemoStore>()(
     }),
     {
       name: STORAGE_KEY,
-      version: 1,
+      version: 3,
+      migrate: (saved, version) => {
+        if (![1, 2].includes(version)) throw new Error('Unsupported storage version')
+        // User-requested one-time cleanup of obsolete demo custody and nested invoices/history.
+        const previous = persistedSchema.parse(saved)
+        return { ...previous, assets: [] }
+      },
       storage: createJSONStorage(() => storage),
-      partialize: ({ employees, assets, clearances }) => ({ employees, assets, clearances }),
+      partialize: ({ employees, assets, clearances, inventory }) => ({
+        employees,
+        assets,
+        clearances,
+        inventory: inventory ?? []
+      }),
       merge: (saved, current) => {
         if (saved === undefined) return current
         const result = persistedSchema.safeParse(saved)
