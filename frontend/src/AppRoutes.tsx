@@ -9,6 +9,9 @@ import ClearancePage from '@/modules/clearance/pages/ClearancePage'
 import PackageEditorPage from '@/modules/packages/pages/PackageEditorPage'
 import PackagesPage from '@/modules/packages/pages/PackagesPage'
 import OrganizerContractsPage from '@/modules/contracts/pages/OrganizerContractsPage'
+import InternationalFlightsPage from '@/modules/inputs/pages/InternationalFlightsPage'
+import AccommodationPage from '@/modules/accommodation/pages/AccommodationPage'
+import InputCategoryPage from '@/modules/inputs/pages/InputCategoryPage'
 /** Defines localized routes and redirects unknown paths to the dashboard. @returns Route tree. */
 export function AppRoutes() {
   return (
@@ -22,12 +25,28 @@ export function AppRoutes() {
           <Route path="clearance" element={<ClearancePage />} />
           <Route path="packages" element={<PackagesPage />} />
           <Route path="contracts" element={<OrganizerContractsPage />} />
+          <Route path="inputs/international-flights" element={<InternationalFlightsPage />} />
+          <Route path="inputs/accommodation" element={<AccommodationPage />} />
+          <Route path="inputs/:category" element={<InputCategoryPage />} />
           <Route path="packages/new" element={<PackageEditorPage key="new" />} />
           <Route path="packages/:id/edit" element={<PackageEditorPage key="edit" />} />
           <Route path="*" element={<Navigate to={`/${language}`} replace />} />
         </Route>
       ))}
-      {['employees', 'payroll', 'custody', 'clearance', 'packages', 'contracts'].map((path) => (
+      {[
+        'employees',
+        'payroll',
+        'custody',
+        'clearance',
+        'packages',
+        'contracts',
+        'inputs/international-flights',
+        'inputs/accommodation',
+        'inputs/catering',
+        'inputs/transport',
+        'inputs/enrichment-trips',
+        'inputs/mashair'
+      ].map((path) => (
         <Route
           key={path}
           path={`/${path}`}

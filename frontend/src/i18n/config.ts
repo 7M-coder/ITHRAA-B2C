@@ -14,6 +14,7 @@ void i18n
     fallbackLng: 'ar',
     defaultNS: 'common',
     ns: [
+      'accommodation',
       'common',
       'dashboard',
       'employees',
@@ -21,7 +22,8 @@ void i18n
       'custody',
       'clearance',
       'packages',
-      'contracts'
+      'contracts',
+      'inputs'
     ],
     fallbackNS: 'common',
     detection: {
