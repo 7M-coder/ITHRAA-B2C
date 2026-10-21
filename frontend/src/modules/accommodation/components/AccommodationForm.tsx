@@ -1,3 +1,5 @@
+import { AccommodationRoomRates } from './AccommodationRoomRates'
+import { AccommodationPricing } from './AccommodationPricing'
 import dayjs from 'dayjs'
 import { ContractDateInput } from './ContractDateInput'
 import { useState } from 'react'
@@ -8,9 +10,10 @@ import {
   accommodationFields,
   accommodationRules,
   accommodationWriteSchema,
-  accommodationDateRules
+  accommodationDateRules,
+  unifiedNumberSchema
 } from '../validations/schemas'
-import { roomTotal, roomTypes } from '../utils/rooms'
+import { roomTotal } from '../utils/rooms'
 interface Props {
   record?: Accommodation
   onClose: () => void
@@ -24,6 +27,9 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const city = Form.useWatch('city', form)
   const catering = Form.useWatch('catering', form)
   const rooms = Form.useWatch('rooms', form)
+  const suiteBeds = Form.useWatch('suiteBeds', form)
+  const roomRates = Form.useWatch('roomRates', form)
+  const contractPrice = Form.useWatch('contractPrice', form)
   const capacity = Form.useWatch('capacity', form)
   const contractStart = Form.useWatch('contractStart', form)
   const contractEnd = Form.useWatch('contractEnd', form)
@@ -47,6 +53,7 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const submit = (values: Accommodation) => {
     const result = accommodationWriteSchema.safeParse({
       ...values,
+      pricingBasis: 'bed_night',
       id: record?.id ?? crypto.randomUUID()
     })
     if (!result.success) {
@@ -55,7 +62,19 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
           result.error.issues.map((i) =>
             t(
               'errors.' +
-                (['capacity', 'range', 'coverage', 'required', 'priceRequired'].includes(i.message)
+                ([
+                  'capacity',
+                  'range',
+                  'coverage',
+                  'required',
+                  'priceRequired',
+                  'reference',
+                  'rateRequired',
+                  'pricingIncomplete',
+                  'contractMismatch',
+                  'suiteBedsRequired',
+                  'legacyRates'
+                ].includes(i.message)
                   ? i.message
                   : 'invalid')
             )
@@ -82,13 +101,28 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
         layout="vertical"
         onFinish={submit}
         initialValues={
-          record ?? {
-            rooms: { double: 0, triple: 0, quadruple: 0, suites: 0 },
-            catering: false,
-            periods: [{}]
-          }
+          record
+            ? {
+                ...record,
+                roomRates:
+                  record.pricingBasis === 'bed_night' || record.pricingBasis === 'bed_rate_total'
+                    ? record.roomRates
+                    : undefined
+              }
+            : {
+                rooms: { double: 0, triple: 0, quadruple: 0, suites: 0 },
+                catering: false,
+                periods: [{}]
+              }
         }
       >
+        <Form.Item
+          name="unifiedNumber"
+          label={t('unifiedNumber')}
+          rules={accommodationRules(unifiedNumberSchema, t('errors.reference'))}
+        >
+          <Input maxLength={10} />
+        </Form.Item>
         <Form.Item name="city" label={t('city')} rules={rules(accommodationFields.shape.city)}>
           <Select options={['makkah', 'madinah'].map((value) => ({ value, label: t(value) }))} />
         </Form.Item>
@@ -121,26 +155,14 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
               >
                 <InputNumber className="w-full!" min={1} />
               </Form.Item>
-              <Form.Item
-                name="unifiedNumber"
-                label={t('unifiedNumber')}
-                rules={rules(accommodationFields.shape.unifiedNumber)}
-              >
-                <Input />
-              </Form.Item>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-4">
-              {roomTypes.map((key) => (
-                <Form.Item
-                  key={key}
-                  name={['rooms', key]}
-                  label={t('rooms.' + key)}
-                  rules={rules(accommodationFields.shape.rooms.shape[key])}
-                >
-                  <InputNumber className="w-full!" min={0} />
-                </Form.Item>
-              ))}
-            </div>
+            {record &&
+              record.pricingBasis !== 'bed_night' &&
+              record.pricingBasis !== 'bed_rate_total' && (
+                <Alert className="mb-4!" type="info" message={t('pricing.legacyRates')} />
+              )}
+            <p>{t('pricing.rateHelp')}</p>
+            <AccommodationRoomRates />
             <Alert
               className="mb-4!"
               type={roomTotal(rooms) > capacity ? 'error' : 'info'}
@@ -159,6 +181,14 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
             >
               <InputNumber className="w-full!" min={0} precision={2} />
             </Form.Item>
+            <AccommodationPricing
+              rooms={rooms}
+              rates={roomRates}
+              contractPrice={contractPrice}
+              pricingBasis="bed_night"
+              periods={periods}
+              suiteBeds={suiteBeds}
+            />
             <div className="grid gap-x-4 sm:grid-cols-2">
               {(['contractStart', 'contractEnd'] as const).map((key) => (
                 <Form.Item

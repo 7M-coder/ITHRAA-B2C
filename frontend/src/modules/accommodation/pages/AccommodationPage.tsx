@@ -80,11 +80,11 @@ export default function AccommodationPage() {
               (r.name + ' ' + r.unifiedNumber).toLowerCase().includes(search.trim().toLowerCase())
           )}
           columns={[
+            { title: t('unifiedNumber'), dataIndex: 'unifiedNumber' },
             { title: t('name'), dataIndex: 'name' },
             { title: t('city'), render: (_, r) => t(r.city) },
             { title: t('classification'), render: (_, r) => t('ratings.' + r.classification) },
             { title: t('capacity'), dataIndex: 'capacity' },
-            { title: t('unifiedNumber'), dataIndex: 'unifiedNumber' },
             {
               title: t('actions'),
               render: (_, r) => (

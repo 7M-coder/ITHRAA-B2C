@@ -8,7 +8,7 @@ import { record } from './fixtures'
 
 describe('housing invariants', () => {
   it('allows exact capacity and unused capacity, counts suites once and keeps leading zeroes', () => {
-    expect(accommodationSchema.parse(record).unifiedNumber).toBe('001234')
+    expect(accommodationSchema.parse(record).unifiedNumber).toBe('0012345678')
     expect(accommodationSchema.safeParse({ ...record, capacity: 101 }).success).toBe(true)
   })
   it.each([99, 0, -1, 1.5])('rejects invalid capacity %s', (capacity) =>
@@ -25,7 +25,7 @@ describe('housing invariants', () => {
     [{ start: '2027-04-08', end: '2027-06-06' }],
     [
       { start: '2027-04-08', end: '2027-05-01' },
-      { start: '2027-05-02', end: '2027-06-05' }
+      { start: '2027-05-03', end: '2027-06-05' }
     ],
     [
       { start: '2027-04-08', end: '2027-05-01' },
@@ -58,10 +58,19 @@ it('requires a valid price for writes without invalidating old records', () => {
     expect(accommodationWriteSchema.safeParse({ ...record, contractPrice: price }).success).toBe(
       false
     )
-  for (const price of [0, 100.25])
-    expect(accommodationWriteSchema.parse({ ...record, contractPrice: price }).contractPrice).toBe(
-      price
-    )
+  for (const price of [0, record.contractPrice])
+    expect(
+      accommodationWriteSchema.parse({
+        ...record,
+        roomRates: {
+          double: price === 0 ? 0 : 10,
+          triple: price === 0 ? 0 : 10,
+          quadruple: price === 0 ? 0 : 10,
+          suites: price === 0 ? 0 : 10
+        },
+        contractPrice: price
+      }).contractPrice
+    ).toBe(price)
 })
 it('rejects reversed contract and period dates in store validation', () => {
   expect(accommodationWriteSchema.safeParse({ ...record, contractEnd: '2027-04-07' }).success).toBe(
@@ -91,4 +100,27 @@ it('validates related date fields before submission, including changed dependenc
   await expect(next.validator({}, '2027-05-01')).resolves.toBeUndefined()
   values.periods[0].end = '2027-05-02'
   await expect(next.validator({}, '2027-05-01')).rejects.toThrow('order')
+})
+
+it('accepts next-day starts through schema and field validation, but rejects longer gaps', async () => {
+  const periods = [
+    { start: '2027-04-08', end: '2027-05-01' },
+    { start: '2027-05-02', end: '2027-06-05' }
+  ]
+  expect(
+    accommodationWriteSchema.safeParse({ ...record, periods, contractPrice: 220875 }).success
+  ).toBe(true)
+  const values = { ...record, periods }
+  const getValue = (path: unknown) =>
+    (Array.isArray(path) ? path : [path]).reduce((value, key) => value?.[key], values)
+  const rules = accommodationDateRules(
+    getValue,
+    'start',
+    { invalid: 'invalid', range: 'range', coverage: 'coverage', order: 'order' },
+    1
+  )[0] as { validator: (_: unknown, value: unknown) => Promise<void> }
+  await expect(rules.validator({}, '2027-05-02')).resolves.toBeUndefined()
+  await expect(rules.validator({}, '2027-05-01')).resolves.toBeUndefined()
+  await expect(rules.validator({}, '2027-04-30')).rejects.toThrow('order')
+  await expect(rules.validator({}, '2027-05-03')).rejects.toThrow('coverage')
 })

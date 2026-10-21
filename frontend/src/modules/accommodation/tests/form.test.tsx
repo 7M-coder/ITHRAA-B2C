@@ -11,6 +11,7 @@ beforeEach(async () => {
 it('validates capacity on submission and saves edits with ISO dates', async () => {
   const save = vi.fn()
   render(<AccommodationForm record={record} onClose={vi.fn()} onSave={save} />)
+  expect(screen.getByRole('columnheader', { name: en.pricing.rateColumn })).toBeInTheDocument()
   fireEvent.change(screen.getByLabelText('Capacity (rooms)'), { target: { value: '99' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(await screen.findByText('Room total exceeds capacity.')).toBeInTheDocument()
@@ -52,9 +53,29 @@ it('requires a contract price when editing a legacy housing record', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(await screen.findByText(en.errors.priceRequired)).toBeInTheDocument()
   expect(save).not.toHaveBeenCalled()
-  fireEvent.change(screen.getByLabelText('Contract price (SAR)'), { target: { value: '12345.50' } })
+  fireEvent.change(screen.getByLabelText(en.contractPrice), { target: { value: '224750' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() =>
-    expect(save).toHaveBeenCalledWith({ ...record, contractPrice: 12345.5, board: undefined })
+    expect(save).toHaveBeenCalledWith({
+      ...record,
+      contractPrice: record.contractPrice,
+      board: undefined
+    })
   )
+}, 35000)
+
+it('updates the tax comparison and blocks a mismatch until the price matches', async () => {
+  const save = vi.fn()
+  render(<AccommodationForm record={record} onClose={vi.fn()} onSave={save} />)
+  fireEvent.change(screen.getByLabelText(en.contractPrice), { target: { value: '224751' } })
+  expect(await screen.findByText(en.errors.contractMismatch)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() =>
+    expect(screen.getAllByText(en.errors.contractMismatch).length).toBeGreaterThan(1)
+  )
+  expect(save).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByLabelText(en.contractPrice), { target: { value: '224750' } })
+  expect(await screen.findByText(en.pricing.matched)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(save).toHaveBeenCalledWith({ ...record, board: undefined }))
 }, 35000)
