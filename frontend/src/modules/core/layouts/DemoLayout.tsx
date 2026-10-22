@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Plane } from 'lucide-react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Alert, App, Avatar, Button, Drawer, Dropdown, Menu, Tag } from 'antd'
 import {
@@ -73,7 +74,11 @@ export function DemoLayout() {
       icon: <ImportOutlined />,
       label: t('inputsSection'),
       children: [
-        navLink('internationalFlights', 'inputs/international-flights', <ImportOutlined />),
+        navLink(
+          'internationalFlights',
+          'inputs/international-flights',
+          <Plane className="h-4 w-4" aria-hidden="true" />
+        ),
         navLink('accommodationInput', 'inputs/accommodation', <BankOutlined />),
         navLink('cateringInput', 'inputs/catering', <GiftOutlined />),
         navLink('transportInput', 'inputs/transport', <ToolOutlined />),
