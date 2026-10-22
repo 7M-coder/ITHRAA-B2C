@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Correct the system identity in the footer, browser title and agent instructions to Internal Direct Hajj Management System.
+
+- Replace the Emirates-only flight workflow with a unified manual booking table and multi-segment editor covering the three reference workbooks; preserve existing local records and independent financial values.
+
 - Add organizer contract drafts, previews, printing, and a downloadable template.
 - Adopt malek service pricing with 15% VAT while retaining formatted descriptions, seven categories and housing terminology; archive previous pricing during migration.
 - Restore double, triple and quadruple room-type selections for each housing stage, retaining saved choices independently of service pricing.

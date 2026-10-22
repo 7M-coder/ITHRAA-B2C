@@ -4,6 +4,7 @@ import type { InternationalFlightRequest } from '../types/domain'
 
 const request: InternationalFlightRequest = {
   id: 'request-1',
+  segments: [],
   pnr: 'DIBXE2',
   arrivalDate: '2025-05-15',
   arrivalRoute: 'FRA DXB MED',
@@ -36,22 +37,13 @@ describe('flight booking requests', () => {
     expect(useInputsStore.getState().requests).toEqual([])
   })
 
-  it('updates a matching PNR and route on repeated import', () => {
-    useInputsStore.getState().saveRequest(request)
-    useInputsStore
-      .getState()
-      .importRequests([{ ...request, id: 'spreadsheet-id', totalFare: 50000 }])
-    expect(useInputsStore.getState().requests).toHaveLength(1)
-    expect(useInputsStore.getState().requests[0].totalFare).toBe(50000)
-  })
-
   it('preserves unreadable storage data', async () => {
     localStorage.setItem(INPUTS_STORAGE_KEY, 'invalid json')
     vi.resetModules()
     const { useInputsStore: reloaded, useInputsStorageStatus: status } =
       await import('../hooks/useInputsStore')
     expect(status.getState().error).toBe(true)
-    reloaded.getState().saveRequest(request)
+    expect(() => reloaded.getState().saveRequest(request)).toThrow('storage')
     expect(localStorage.getItem(INPUTS_STORAGE_KEY)).toBe('invalid json')
   })
 })

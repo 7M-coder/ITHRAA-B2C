@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type { InternationalFlightRequest } from '../types/domain'
 import { flightRequestSchema, flightRequestsSchema } from '../validations/schemas'
-import { flightRequestKey } from '../utils/flightImport'
+import { migrateFlightState } from '../utils/migration'
 
 // A separate key keeps earlier per-pilgrim flight records intact; their shape is unrelated to PNR requests.
 export const INPUTS_STORAGE_KEY = 'ithraa-b2c-flight-requests-v1'
@@ -20,12 +20,13 @@ const storage: StateStorage = {
     }
   },
   setItem: (key, value) => {
-    if (blocked) return
+    if (blocked) throw new Error('storage')
     try {
       localStorage.setItem(key, value)
       useInputsStorageStatus.setState({ error: false })
     } catch {
       useInputsStorageStatus.setState({ error: true })
+      throw new Error('storage')
     }
   },
   removeItem: (key) => {
@@ -41,7 +42,6 @@ interface InputsStore {
   requests: InternationalFlightRequest[]
   saveRequest: (request: InternationalFlightRequest) => void
   deleteRequest: (id: string) => void
-  importRequests: (requests: InternationalFlightRequest[]) => void
 }
 
 /** Persists and manages international flight booking requests. @returns Zustand store hook. */
@@ -51,32 +51,24 @@ export const useInputsStore = create<InputsStore>()(
       requests: [],
       saveRequest: (candidate) => {
         const request = flightRequestSchema.parse(candidate)
-        if (
-          get().requests.some(
-            (item) => item.id !== request.id && flightRequestKey(item) === flightRequestKey(request)
-          )
-        )
-          throw new Error('duplicate')
-        set((state) => ({
-          requests: state.requests.some((item) => item.id === request.id)
-            ? state.requests.map((item) => (item.id === request.id ? request : item))
-            : [...state.requests, request]
-        }))
+        if (blocked) throw new Error('storage')
+        const requests = get().requests.some((item) => item.id === request.id)
+          ? get().requests.map((item) => (item.id === request.id ? request : item))
+          : [...get().requests, request]
+        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 2 }))
+        set({ requests })
       },
-      deleteRequest: (id) =>
-        set((state) => ({ requests: state.requests.filter((item) => item.id !== id) })),
-      importRequests: (candidates) => {
-        const requests = flightRequestsSchema.parse(candidates)
-        set((state) => {
-          const combined = new Map(state.requests.map((item) => [flightRequestKey(item), item]))
-          requests.forEach((item) => combined.set(flightRequestKey(item), item))
-          return { requests: [...combined.values()] }
-        })
+      deleteRequest: (id) => {
+        if (blocked) throw new Error('storage')
+        const requests = get().requests.filter((item) => item.id !== id)
+        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 2 }))
+        set({ requests })
       }
     }),
     {
       name: INPUTS_STORAGE_KEY,
-      version: 1,
+      version: 2,
+      migrate: migrateFlightState,
       storage: createJSONStorage(() => storage),
       partialize: ({ requests }) => ({ requests }),
       merge: (saved, current) => {

@@ -55,3 +55,96 @@ a:focus-visible {
   outline: 3px solid #00b5a4;
   outline-offset: 3px;
 }
+
+/* Distinct flight group headers in both themes. */
+.flight-groups-table .ant-table-thead > tr > th.flight-header-booking {
+  background: #d8eeec;
+  color: #184b48;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-booking {
+  background: #203f3d;
+  color: #cceae6;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-travel {
+  background: #ddeafa;
+  color: #24476a;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-travel {
+  background: #23384f;
+  color: #d6e5fb;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-passengers {
+  background: #eee2f7;
+  color: #624077;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-passengers {
+  background: #42304f;
+  color: #ead9f5;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-pricing {
+  background: #faebcf;
+  color: #70551d;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-pricing {
+  background: #493d24;
+  color: #f5e3b9;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-conversion {
+  background: #dff0db;
+  color: #3f6033;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-conversion {
+  background: #30462a;
+  color: #d7edcd;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-payment {
+  background: #fae1de;
+  color: #7c4138;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-payment {
+  background: #4c302d;
+  color: #f7d8d2;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-segment-0 {
+  background: #dfe5fa;
+  color: #394b83;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-segment-0 {
+  background: #2e3755;
+  color: #dce2ff;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-segment-1 {
+  background: #f3e2ee;
+  color: #744660;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-segment-1 {
+  background: #493244;
+  color: #efdcea;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-segment-2 {
+  background: #def1f3;
+  color: #315f67;
+}
+.dark .flight-groups-table .ant-table-thead > tr > th.flight-header-segment-2 {
+  background: #294248;
+  color: #d3edf1;
+}
+
+/* Column grid lines stay visible on tinted headers; heavier lines mark groups. */
+.flight-groups-table {
+  --flight-grid: #c5d0d3;
+  --flight-group-border: #8b9ea4;
+}
+.dark .flight-groups-table {
+  --flight-grid: #4a5f65;
+  --flight-group-border: #7f969c;
+}
+.flight-groups-table .ant-table-thead > tr > th,
+.flight-groups-table .ant-table-tbody > tr > td {
+  border-inline-end: 1px solid var(--flight-grid) !important;
+  border-bottom: 1px solid var(--flight-grid) !important;
+}
+.flight-groups-table .ant-table-thead > tr:first-child > th + th,
+.flight-groups-table .ant-table-cell.flight-group-start {
+  border-inline-start: 2px solid var(--flight-group-border) !important;
+}

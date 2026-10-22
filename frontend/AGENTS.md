@@ -1,8 +1,8 @@
 # Ithraa B2C Frontend — Agent Instructions
 
-## Active phase: frontend-only HR and custody demo
+## Active phase: frontend-only internal Direct Hajj management system
 
-The current deliverable is an Arabic/English HR, payroll, custody, and clearance demo for إثراء الخير. The latest attached HR requirements govern this phase; earlier Hajj requirements are background only. Work exclusively in `frontend/`. The backend and database will be built after demo approval.
+The current deliverable is the Arabic/English internal Direct Hajj management system for إثراء الخير, including Hajj operations, packages, flight inputs, HR, payroll, custody, and clearance. Use «النظام الداخلي لإدارة الحج المباشر» as the system description and “Internal Direct Hajj Management System” in English. HR and custody are modules, not the identity of the whole system. Follow the latest user-approved requirements for each module. Work exclusively in `frontend/`. The backend and database will be built after demo approval.
 
 - Use Zustand with `persist` and localStorage for all shared business data. Keep React Context for theme/language only.
 - Seed synthetic records once on first use, never on page navigation or whenever an array becomes empty.
@@ -127,3 +127,7 @@ Keep agent instructions in `AGENTS.md`. Do not create separate requirements, pro
    
 
 <!--markdownlint-disable-next-line first-line-heading-->  **By submitting this merge request, I confirm the following:** _please fill any appropriate checkboxes, e.g: [x]_  - [x] The merge request title follows the conventional commits convention (see `README.md`) - [ ] I have made only one major change in my proposed changes. - [x] I have commented my proposed changes within the code (classes, methods/functions, and wherever additional explanation is necessary). - [ ] I have tested my proposed changes, and have included unit tests where possible. - [ ] New and existing unit tests pass locally with my changes - [x] I have added a changelog entry to `CHANGELOG.md`. - [x] I have updated the documentation if necessary. - [x] I have implemented translations in the code and added the necessary keys in the relevant namespaces (files).  ---  ### Summary  <!-- Describe what was implemented -->  ### Test Instructions  <!-- Step-by-step instructions to manually verify the changes -->
+
+## Unified flight inputs
+
+International flights use one manual table and form combining the supplied workbook columns. Do not restore format-specific Excel imports. Preserve optional source fields, ordered segments, foreign currencies and historical dates. Financial figures are independent recorded values; do not calculate taxes, conversions or payments. Version 2 of the flight store preserves legacy request IDs and adds empty segment arrays. No real source booking records belong in public seeds.
