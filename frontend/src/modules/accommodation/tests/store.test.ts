@@ -3,6 +3,10 @@ import { record } from './fixtures'
 const key = 'ithraa-b2c-accommodation-v1'
 it('creates, updates, rehydrates and preserves empty inventory', async () => {
   localStorage.clear()
+  localStorage.setItem(
+    key,
+    JSON.stringify({ version: 1, state: { records: [], demoSeeded: true } })
+  )
   vi.resetModules()
   let { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
   store.getState().saveAccommodation(record)
@@ -47,17 +51,66 @@ it('reports storage access failure', async () => {
 it('hydrates older housing without fabricating a price, then requires price on save', async () => {
   localStorage.clear()
   vi.resetModules()
-  const legacy = { ...record, contractPrice: undefined }
+  const legacy = {
+    ...record,
+    contractPrice: undefined,
+    roomRates: undefined,
+    pricingBasis: undefined,
+    unifiedNumber: '001234'
+  }
   localStorage.setItem(key, JSON.stringify({ version: 1, state: { records: [legacy] } }))
   const { useAccommodationStore: store, useAccommodationStorageStatus: status } =
     await import('../hooks/useAccommodationStore')
   expect(status.getState().error).toBe(false)
   expect(store.getState().records[0].contractPrice).toBeUndefined()
   expect(() => store.getState().saveAccommodation(legacy)).toThrow()
-  store.getState().saveAccommodation({ ...legacy, contractPrice: 70000.25 })
+  store.getState().saveAccommodation(record)
   vi.resetModules()
   expect(
     (await import('../hooks/useAccommodationStore')).useAccommodationStore.getState().records[0]
       .contractPrice
-  ).toBe(70000.25)
+  ).toBe(record.contractPrice)
+})
+
+it('persists a contract value independently of bed pricing', async () => {
+  localStorage.clear()
+  localStorage.setItem(
+    key,
+    JSON.stringify({ version: 1, state: { records: [], demoSeeded: true } })
+  )
+  vi.resetModules()
+  const { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
+  store.getState().saveAccommodation({ ...record, contractPrice: 123 })
+  expect(store.getState().records[0].contractPrice).toBe(123)
+  await store.persist.rehydrate()
+  expect(store.getState().records[0].contractPrice).toBe(123)
+})
+
+it('seeds both cities once and preserves edits and an intentionally emptied list', async () => {
+  localStorage.clear()
+  vi.resetModules()
+  let { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
+  expect(store.getState().records).toHaveLength(4)
+  expect(new Set(store.getState().records.map((item) => item.city)).size).toBe(2)
+  const demo = store.getState().records[0]
+  store.getState().saveAccommodation({ ...demo, name: 'Edited demo' })
+  vi.resetModules()
+  store = (await import('../hooks/useAccommodationStore')).useAccommodationStore
+  expect(store.getState().records).toHaveLength(4)
+  expect(store.getState().records[0].name).toBe('Edited demo')
+  store.setState({ records: [] })
+  vi.resetModules()
+  store = (await import('../hooks/useAccommodationStore')).useAccommodationStore
+  expect(store.getState().records).toEqual([])
+})
+
+it('adds demo housing to existing local data without replacing user records', async () => {
+  localStorage.clear()
+  localStorage.setItem(key, JSON.stringify({ version: 1, state: { records: [record] } }))
+  vi.resetModules()
+  const { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
+  expect(store.getState().records).toHaveLength(5)
+  expect(store.getState().records[0]).toMatchObject(record)
+  await store.persist.rehydrate()
+  expect(store.getState().records).toHaveLength(5)
 })

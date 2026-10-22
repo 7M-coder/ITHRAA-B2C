@@ -2,8 +2,17 @@ import { z } from 'zod'
 import type { FormInstance } from 'antd'
 import type { Rule } from 'antd/es/form'
 import { isSafeInput } from '@/modules/core/utils/inputSafety'
-import { roomTotal } from '../utils/rooms'
+import { roomTotal, pricedRoomTypes, roomTypes } from '../utils/rooms'
+import { isAdjacentPeriodStart } from '../utils/periods'
+import { nightlyBedPricing, toHalalas } from '../utils/pricing'
 const text = z.string().trim().min(1).max(200).refine(isSafeInput, 'unsafe')
+export const housingMoneySchema = z
+  .number()
+  .finite()
+  .nonnegative()
+  .multipleOf(0.01)
+  .refine((v) => toHalalas(v) !== null)
+export const unifiedNumberSchema = text.refine((value) => /^[\p{L}\p{Nd}]{10}$/u.test(value))
 const count = z.number().finite().int().nonnegative()
 const date = z
   .string()
@@ -17,7 +26,19 @@ export const accommodationFields = z.object({
   capacity: count.positive(),
   rooms: z.object({ double: count, triple: count, quadruple: count, suites: count }),
   unifiedNumber: text,
-  contractPrice: z.number().finite().nonnegative().multipleOf(0.01).optional(),
+  pricingBasis: z
+    .enum(['room_contract', 'bed_night', 'bed_rate_total', 'bed_night_three'])
+    .optional(),
+  suiteBeds: z.number().int().positive().refine(Number.isSafeInteger).optional(),
+  roomRates: z
+    .object({
+      double: housingMoneySchema.optional(),
+      triple: housingMoneySchema.optional(),
+      quadruple: housingMoneySchema.optional(),
+      suites: housingMoneySchema.optional()
+    })
+    .optional(),
+  contractPrice: housingMoneySchema.optional(),
   contractStart: date,
   contractEnd: date,
   periods: z.array(z.object({ start: date, end: date })).min(1),
@@ -37,7 +58,9 @@ export const accommodationSchema = accommodationFields
         p.end <= p.start ||
         p.start < v.contractStart ||
         p.end > v.contractEnd ||
-        (i === 0 ? p.start !== v.contractStart : p.start !== v.periods[i - 1].end) ||
+        (i === 0
+          ? p.start !== v.contractStart
+          : !isAdjacentPeriodStart(p.start, v.periods[i - 1].end)) ||
         (i === v.periods.length - 1 && p.end !== v.contractEnd)
       )
         ctx.addIssue({ code: 'custom', path: ['periods', i, 'start'], message: 'coverage' })
@@ -60,6 +83,22 @@ export function accommodationRules(schema: z.ZodTypeAny, message: string): Rule[
 
 // Hydration permits older records without inventing a historical price.
 export const accommodationWriteSchema = accommodationSchema.superRefine((record, ctx) => {
+  if (!unifiedNumberSchema.safeParse(record.unifiedNumber).success)
+    ctx.addIssue({ code: 'custom', path: ['unifiedNumber'], message: 'reference' })
+  for (const key of record.pricingBasis === 'bed_night' ? roomTypes : pricedRoomTypes)
+    if (record.rooms[key] > 0 && record.roomRates?.[key] === undefined)
+      ctx.addIssue({ code: 'custom', path: ['roomRates', key], message: 'rateRequired' })
+  if (record.pricingBasis !== 'bed_night_three' && record.pricingBasis !== 'bed_night')
+    ctx.addIssue({ code: 'custom', path: ['roomRates'], message: 'legacyRates' })
+  if (
+    record.pricingBasis === 'bed_night' &&
+    record.rooms.suites > 0 &&
+    record.suiteBeds === undefined
+  )
+    ctx.addIssue({ code: 'custom', path: ['suiteBeds'], message: 'suiteBedsRequired' })
+  for (const key of pricedRoomTypes)
+    if (record.roomRates?.[key] !== undefined && nightlyBedPricing(record.roomRates[key]) === null)
+      ctx.addIssue({ code: 'custom', path: ['roomRates', key], message: 'pricingIncomplete' })
   if (record.contractPrice === undefined)
     ctx.addIssue({ code: 'custom', path: ['contractPrice'], message: 'priceRequired' })
 })
@@ -97,7 +136,8 @@ export function accommodationDateRules(
           const previous =
             index > 0 ? (getValue(['periods', index - 1, 'end']) as string | undefined) : start
           if (previous && v < previous) throw new Error(messages.order)
-          if (previous && v !== previous) throw new Error(messages.coverage)
+          if (previous && (index === 0 ? v !== previous : !isAdjacentPeriodStart(v, previous)))
+            throw new Error(messages.coverage)
         } else {
           const periods = getValue('periods') as unknown[] | undefined
           if (periods && index === periods.length - 1 && end && v !== end)

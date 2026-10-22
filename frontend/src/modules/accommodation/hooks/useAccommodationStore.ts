@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type { Accommodation } from '../types/domain'
 import { accommodationWriteSchema, accommodationsSchema } from '../validations/schemas'
+import { createDemoAccommodations } from '../utils/demoData'
 
 // Accommodation storage is isolated from other demo modules.
 export const ACCOMMODATION_STORAGE_KEY = 'ithraa-b2c-accommodation-v1'
@@ -52,6 +53,7 @@ const storage: StateStorage = {
 
 interface AccommodationStore {
   records: Accommodation[]
+  demoSeeded: boolean
   saveAccommodation: (request: Accommodation) => void
 }
 
@@ -60,6 +62,7 @@ export const useAccommodationStore = create<AccommodationStore>()(
   persist(
     (set) => ({
       records: [],
+      demoSeeded: false,
       saveAccommodation: (candidate) => {
         const request = accommodationWriteSchema.parse(candidate)
         if (blocked || useAccommodationStorageStatus.getState().error) throw new Error('storage')
@@ -79,18 +82,19 @@ export const useAccommodationStore = create<AccommodationStore>()(
         throw new Error('storageVersion')
       },
       storage: createJSONStorage(() => storage),
-      partialize: ({ records }) => ({ records }),
+      partialize: ({ records, demoSeeded }) => ({ records, demoSeeded }),
       merge: (saved, current) => {
         if (saved === undefined) return current
         const parsed = accommodationsSchema.safeParse(
           (saved as { records?: unknown } | undefined)?.records
         )
-        if (!parsed.success) {
+        const demoSeeded = (saved as { demoSeeded?: unknown })?.demoSeeded
+        if (!parsed.success || (demoSeeded !== undefined && typeof demoSeeded !== 'boolean')) {
           blocked = true
           useAccommodationStorageStatus.setState({ error: true })
           return current
         }
-        return { ...current, records: parsed.data }
+        return { ...current, records: parsed.data, demoSeeded: demoSeeded === true }
       },
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
@@ -101,3 +105,20 @@ export const useAccommodationStore = create<AccommodationStore>()(
     }
   )
 )
+
+// Seed once after synchronous hydration, preserving existing records and unreadable storage.
+if (
+  !blocked &&
+  !useAccommodationStorageStatus.getState().error &&
+  !useAccommodationStore.getState().demoSeeded
+) {
+  useAccommodationStore.setState((state) => ({
+    records: [
+      ...state.records,
+      ...createDemoAccommodations().filter(
+        (demo) => !state.records.some((record) => record.id === demo.id)
+      )
+    ],
+    demoSeeded: true
+  }))
+}

@@ -1,16 +1,32 @@
+import { Save, Trash2, X } from 'lucide-react'
+import { AccommodationActionButton } from './AccommodationActionButton'
+import { AccommodationRoomRates } from './AccommodationRoomRates'
+import { AccommodationPricing } from './AccommodationPricing'
 import dayjs from 'dayjs'
 import { ContractDateInput } from './ContractDateInput'
 import { useState } from 'react'
-import { Alert, Button, Form, Input, InputNumber, Modal, Select, Radio } from 'antd'
+import {
+  Alert,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+  Radio,
+  Typography,
+  Tooltip
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { Accommodation } from '../types/domain'
 import {
   accommodationFields,
   accommodationRules,
   accommodationWriteSchema,
-  accommodationDateRules
+  accommodationDateRules,
+  unifiedNumberSchema
 } from '../validations/schemas'
-import { roomTotal, roomTypes } from '../utils/rooms'
+import { roomTotal } from '../utils/rooms'
 interface Props {
   record?: Accommodation
   onClose: () => void
@@ -24,6 +40,7 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const city = Form.useWatch('city', form)
   const catering = Form.useWatch('catering', form)
   const rooms = Form.useWatch('rooms', form)
+  const roomRates = Form.useWatch('roomRates', form)
   const capacity = Form.useWatch('capacity', form)
   const contractStart = Form.useWatch('contractStart', form)
   const contractEnd = Form.useWatch('contractEnd', form)
@@ -47,6 +64,10 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const submit = (values: Accommodation) => {
     const result = accommodationWriteSchema.safeParse({
       ...values,
+      rooms: { ...values.rooms, suites: 0 },
+      suiteBeds: undefined,
+      roomRates: values.roomRates ? { ...values.roomRates, suites: undefined } : undefined,
+      pricingBasis: 'bed_night_three',
       id: record?.id ?? crypto.randomUUID()
     })
     if (!result.success) {
@@ -55,7 +76,18 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
           result.error.issues.map((i) =>
             t(
               'errors.' +
-                (['capacity', 'range', 'coverage', 'required', 'priceRequired'].includes(i.message)
+                ([
+                  'capacity',
+                  'range',
+                  'coverage',
+                  'required',
+                  'priceRequired',
+                  'reference',
+                  'rateRequired',
+                  'pricingIncomplete',
+                  'contractMismatch',
+                  'legacyRates'
+                ].includes(i.message)
                   ? i.message
                   : 'invalid')
             )
@@ -71,10 +103,23 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
     <Modal
       open
       title={t(record ? 'edit' : 'add')}
+      closeIcon={
+        <Tooltip title={t('cancel')}>
+          <X size={18} aria-hidden="true" />
+        </Tooltip>
+      }
       onCancel={onClose}
-      onOk={() => form.submit()}
-      okText={t('save')}
-      cancelText={t('cancel')}
+      footer={
+        <div className="flex justify-end gap-2">
+          <AccommodationActionButton label={t('cancel')} icon={X} onClick={onClose} />
+          <AccommodationActionButton
+            label={t('save')}
+            icon={Save}
+            type="primary"
+            onClick={() => form.submit()}
+          />
+        </div>
+      }
       width={900}
     >
       <Form
@@ -82,13 +127,30 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
         layout="vertical"
         onFinish={submit}
         initialValues={
-          record ?? {
-            rooms: { double: 0, triple: 0, quadruple: 0, suites: 0 },
-            catering: false,
-            periods: [{}]
-          }
+          record
+            ? {
+                ...record,
+                roomRates:
+                  record.pricingBasis === 'bed_night' ||
+                  record.pricingBasis === 'bed_rate_total' ||
+                  record.pricingBasis === 'bed_night_three'
+                    ? record.roomRates
+                    : undefined
+              }
+            : {
+                rooms: { double: 0, triple: 0, quadruple: 0, suites: 0 },
+                catering: false,
+                periods: [{}]
+              }
         }
       >
+        <Form.Item
+          name="unifiedNumber"
+          label={t('unifiedNumber')}
+          rules={accommodationRules(unifiedNumberSchema, t('errors.reference'))}
+        >
+          <Input maxLength={10} />
+        </Form.Item>
         <Form.Item name="city" label={t('city')} rules={rules(accommodationFields.shape.city)}>
           <Select options={['makkah', 'madinah'].map((value) => ({ value, label: t(value) }))} />
         </Form.Item>
@@ -121,26 +183,15 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
               >
                 <InputNumber className="w-full!" min={1} />
               </Form.Item>
-              <Form.Item
-                name="unifiedNumber"
-                label={t('unifiedNumber')}
-                rules={rules(accommodationFields.shape.unifiedNumber)}
-              >
-                <Input />
-              </Form.Item>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-4">
-              {roomTypes.map((key) => (
-                <Form.Item
-                  key={key}
-                  name={['rooms', key]}
-                  label={t('rooms.' + key)}
-                  rules={rules(accommodationFields.shape.rooms.shape[key])}
-                >
-                  <InputNumber className="w-full!" min={0} />
-                </Form.Item>
-              ))}
-            </div>
+            {record &&
+              record.pricingBasis !== 'bed_night' &&
+              record.pricingBasis !== 'bed_night_three' &&
+              record.pricingBasis !== 'bed_rate_total' && (
+                <Alert className="mb-4!" type="info" message={t('pricing.legacyRates')} />
+              )}
+            <p>{t('pricing.rateHelp')}</p>
+            <AccommodationRoomRates />
             <Alert
               className="mb-4!"
               type={roomTotal(rooms) > capacity ? 'error' : 'info'}
@@ -159,6 +210,8 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
             >
               <InputNumber className="w-full!" min={0} precision={2} />
             </Form.Item>
+            <AccommodationPricing rates={roomRates} pricingBasis="bed_night_three" />
+            <Typography.Title level={5}>{t('contractDetails')}</Typography.Title>
             <div className="grid gap-x-4 sm:grid-cols-2">
               {(['contractStart', 'contractEnd'] as const).map((key) => (
                 <Form.Item
@@ -229,14 +282,14 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
                           maxDate={contractEnd}
                         />
                       </Form.Item>
-                      <Button
+                      <AccommodationActionButton
+                        label={t('removePeriod')}
+                        icon={Trash2}
                         className="mt-7!"
                         danger
                         disabled={fields.length === 1}
                         onClick={() => remove(field.name)}
-                      >
-                        {t('removePeriod')}
-                      </Button>
+                      />
                     </div>
                   ))}
                   <Button
