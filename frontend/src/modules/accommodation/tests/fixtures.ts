@@ -18,3 +18,12 @@ export const record = {
   ],
   catering: false
 }
+
+export const currentRecord = {
+  ...record,
+  pricingBasis: 'bed_night_three' as const,
+  rooms: { ...record.rooms, suites: 0 },
+  suiteBeds: undefined,
+  roomRates: { double: 10, triple: 10, quadruple: 10 },
+  contractPrice: 210250
+}

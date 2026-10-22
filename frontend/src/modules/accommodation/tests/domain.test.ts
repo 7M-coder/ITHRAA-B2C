@@ -7,11 +7,12 @@ import {
 import { record } from './fixtures'
 
 describe('housing invariants', () => {
-  it('allows exact capacity and unused capacity, counts suites once and keeps leading zeroes', () => {
+  it('allows exact capacity and unused capacity, excludes removed suites and keeps leading zeroes', () => {
+    expect(accommodationSchema.safeParse({ ...record, capacity: 90 }).success).toBe(true)
     expect(accommodationSchema.parse(record).unifiedNumber).toBe('0012345678')
     expect(accommodationSchema.safeParse({ ...record, capacity: 101 }).success).toBe(true)
   })
-  it.each([99, 0, -1, 1.5])('rejects invalid capacity %s', (capacity) =>
+  it.each([89, 0, -1, 1.5])('rejects invalid capacity %s', (capacity) =>
     expect(accommodationSchema.safeParse({ ...record, capacity }).success).toBe(false)
   )
   it.each([-1, 1.5])('rejects invalid room count %s', (double) =>

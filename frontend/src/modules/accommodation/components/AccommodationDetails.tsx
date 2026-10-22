@@ -1,6 +1,6 @@
 import { AccommodationRatesTable } from './AccommodationRatesTable'
 import { AccommodationPricing } from './AccommodationPricing'
-import { Descriptions, Modal, List } from 'antd'
+import { Descriptions, Modal, List, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { Accommodation } from '../types/domain'
 interface Props {
@@ -44,14 +44,8 @@ export function AccommodationDetails({ record, onClose }: Props) {
         ]}
       />
       <AccommodationRatesTable record={record} />
-      <AccommodationPricing
-        pricingBasis={record.pricingBasis}
-        periods={record.periods}
-        suiteBeds={record.suiteBeds}
-        rooms={record.rooms}
-        rates={record.roomRates}
-        contractPrice={record.contractPrice}
-      />
+      <AccommodationPricing pricingBasis={record.pricingBasis} rates={record.roomRates} />
+      <Typography.Title level={5}>{t('contractDetails')}</Typography.Title>
       <List
         header={t('periods')}
         dataSource={record.periods}

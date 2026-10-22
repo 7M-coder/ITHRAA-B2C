@@ -1,5 +1,5 @@
 import type { RoomCounts } from '../types/domain'
-import { roomTypes } from './rooms'
+import { bedsPerRoom, pricedRoomTypes, roomTypes } from './rooms'
 import type { HousingPricing, RoomRates } from '../types/pricing'
 export type { RoomRates } from '../types/pricing'
 export const housingTaxRates = { vat: 15, city: 3, accommodation: 5, collection: 2 } as const
@@ -38,6 +38,15 @@ export function housingPricing(
   }
   if (total > BigInt(Number.MAX_SAFE_INTEGER)) return null
   return { base: Number(base), taxes, total: Number(total) }
+}
+
+/** Adds independent taxes to one bed's nightly rate. @param rate - Untaxed nightly bed price in SAR. @returns Rounded halala totals or null for an invalid or missing rate. */
+export function nightlyBedPricing(rate: unknown): HousingPricing | null {
+  if (toHalalas(rate) === null) return null
+  return housingPricing(
+    { double: 1, triple: 0, quadruple: 0, suites: 0 },
+    { double: rate as number }
+  )
 }
 
 /** Sums occupied nights, excluding same-day handovers and days between periods. @param periods - Contract periods. @returns Night count or null for incomplete dates. */
@@ -80,6 +89,23 @@ export function bedNightPricing(
   for (const key of roomTypes) {
     if (rooms[key] === undefined) return null
     bedNights[key] = rooms[key]! * occupancy[key] * nights
+  }
+  return housingPricing(bedNights, rates)
+}
+
+/** Prices double, triple and quadruple beds for all contract nights. @param rooms - Room counts. @param rates - Per-bed nightly rates. @param periods - Contract periods. @returns Taxed halala totals or null if incomplete. */
+export function pricedBedNightPricing(
+  rooms: Partial<RoomCounts> = {},
+  rates: RoomRates = {},
+  periods: { start: string; end: string }[] = []
+): HousingPricing | null {
+  const nights = contractNights(periods)
+  if (nights === null) return null
+  const bedNights = { double: 0, triple: 0, quadruple: 0, suites: 0 }
+  for (const key of pricedRoomTypes) {
+    const count = rooms[key]
+    if (count === undefined || !Number.isSafeInteger(count) || count < 0) return null
+    bedNights[key] = count * bedsPerRoom[key] * nights
   }
   return housingPricing(bedNights, rates)
 }

@@ -7,7 +7,7 @@ import ar from '../../../../public/locales/ar/accommodation.json'
 import AccommodationPage from '../pages/AccommodationPage'
 import { AccommodationDetails } from '../components/AccommodationDetails'
 import { AccommodationForm } from '../components/AccommodationForm'
-import { record } from './fixtures'
+import { currentRecord } from './fixtures'
 it.each(['ar', 'en'])('shows unified number as the first table column in %s', async (language) => {
   i18n.addResourceBundle(language, 'accommodation', language === 'ar' ? ar : en)
   await i18n.changeLanguage(language)
@@ -20,31 +20,45 @@ it.each(['ar', 'en'])('shows unified number as the first table column in %s', as
     language === 'ar' ? ar.unifiedNumber : en.unifiedNumber
   )
 })
-it('shows all saved room rates and a matching tax summary in details', async () => {
+it('shows separate nightly bed tax tables without a contract comparison', async () => {
   i18n.addResourceBundle('en', 'accommodation', en)
   await i18n.changeLanguage('en')
-  render(<AccommodationDetails record={record} onClose={() => {}} />)
-  expect(screen.getAllByRole('table').length).toBeGreaterThan(0)
-  expect(screen.getByRole('columnheader', { name: en.pricing.item })).toBeInTheDocument()
-  expect(screen.getByRole('columnheader', { name: en.pricing.amount })).toBeInTheDocument()
-  expect(screen.getByText(en.pricing.matched)).toBeInTheDocument()
-  for (const label of [
-    en.pricing.base,
-    en.pricing.vat,
-    en.pricing.city,
-    en.pricing.accommodation,
-    en.pricing.collection,
-    en.pricing.total,
-    en.pricing.difference
-  ])
-    expect(screen.getByText(label)).toBeInTheDocument()
-  expect(screen.getByRole('columnheader', { name: en.pricing.rateColumn })).toBeInTheDocument()
-  const doubleRow = screen.getByText(en.rooms.double).closest('tr')!
-  expect(within(doubleRow).getByText(String(record.rooms.double))).toBeInTheDocument()
-  expect(doubleRow).toHaveTextContent('10.00')
-  expect(screen.getByText(en.unifiedNumber).closest('tr')).toBe(
-    screen.getByText(en.unifiedNumber).closest('tbody')?.firstElementChild
+  render(
+    <AccommodationDetails
+      record={{ ...currentRecord, roomRates: { double: 100, triple: 80, quadruple: 60 } }}
+      onClose={() => {}}
+    />
   )
+  for (const [type, total] of [
+    ['double', '125.00'],
+    ['triple', '100.00'],
+    ['quadruple', '75.00']
+  ] as const) {
+    const section = screen.getByRole('region', { name: en.pricing.bedTitles[type] })
+    expect(within(section).getByText(total, { exact: false })).toBeInTheDocument()
+    expect(within(section).getAllByRole('row')).toHaveLength(7)
+    expect(within(section).queryByText(en.contractPrice)).not.toBeInTheDocument()
+    expect(within(section).queryByText(en.pricing.difference)).not.toBeInTheDocument()
+  }
+  expect(screen.queryByText(en.pricing.matched)).not.toBeInTheDocument()
+})
+
+it('shows total beds for the three priced room types and keeps suites out of the rate table', async () => {
+  i18n.addResourceBundle('en', 'accommodation', en)
+  await i18n.changeLanguage('en')
+  render(
+    <AccommodationDetails
+      record={{ ...currentRecord, rooms: { ...currentRecord.rooms, double: 50 } }}
+      onClose={() => {}}
+    />
+  )
+  expect(screen.getByRole('columnheader', { name: en.pricing.bedCount })).toBeInTheDocument()
+  const doubleRow = screen.getByText(en.rooms.double).closest('tr')!
+  expect(within(doubleRow).getByText('50')).toBeInTheDocument()
+  expect(within(doubleRow).getByText('100')).toBeInTheDocument()
+  expect(screen.getByText(en.rooms.quadruple).closest('tr')).toBeInTheDocument()
+  expect(screen.queryByText(en.rooms.suites)).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: en.contractDetails })).toBeInTheDocument()
 })
 
 it.each(['ar', 'en'])(

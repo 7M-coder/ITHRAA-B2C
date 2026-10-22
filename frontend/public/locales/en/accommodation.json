@@ -11,7 +11,7 @@
   "name": "Accommodation name",
   "classification": "Ministry of Tourism classification",
   "capacity": "Capacity (rooms)",
-  "unifiedNumber": "Establishment unified number",
+  "unifiedNumber": "Unified contract number",
   "rooms": {
     "double": "Double",
     "triple": "Triple",
@@ -52,14 +52,14 @@
     "priceRequired": "Enter a non-negative contract price with up to two decimal places.",
     "dateRange": "The end date must be after the start date.",
     "periodOrder": "A period cannot start before the previous period ends.",
-    "reference": "The unified number must contain exactly 10 letters or digits.",
+    "reference": "Unified contract number must contain exactly 10 letters or digits.",
     "rateRequired": "Enter a non-negative bed rate per night with up to two decimal places.",
     "pricingIncomplete": "Complete rates for all available room types and check the amounts.",
     "contractMismatch": "The total including taxes must exactly equal the contract price.",
     "suiteBedsRequired": "Enter a positive whole number of beds per suite.",
     "legacyRates": "Previously saved rates cover a room for the entire contract. Enter per-bed nightly rates to update pricing; old rates have not been converted automatically."
   },
-  "search": "Search name or unified number",
+  "search": "Search by accommodation name or unified contract number",
   "empty": "No accommodation added yet",
   "actions": "Actions",
   "details": "Details",
@@ -71,7 +71,9 @@
   "roomRate": "{{type}} bed price per night before taxes (SAR)",
   "pricing": {
     "title": "Contract pricing summary",
-    "rateHelp": "Base for the full stay = sum of (beds in each room type × its nightly bed rate) × total period nights. Taxes apply to the full-stay base.",
+    "rateHelp": "Enter the price of one bed per night for each room type before taxes. Taxes and fees are calculated separately for each rate.",
+    "legacySuitePricing": "This previously saved contract includes suite rates in its full-stay base.",
+    "legacySuiteRate": "Suite bed price per night before taxes (previously saved)",
     "base": "Base amount before taxes",
     "vat": "VAT 15%",
     "city": "City tax 3%",
@@ -87,12 +89,21 @@
     "roomCount": "Room count",
     "rateColumn": "Bed price per night before taxes (SAR)",
     "bedsPerRoom": "Beds per room",
+    "bedCount": "Number of beds",
     "suiteBeds": "Beds per suite",
     "nights": "Total period nights: {{count}}",
     "legacyRates": "Previously saved rates cover a room for the entire contract. Enter per-bed nightly rates to update pricing; old rates have not been converted automatically.",
     "roomRatesTitle": "Room type rates",
     "legacyRateColumn": "Room price for entire contract before taxes (SAR)",
-    "legacyBedTotal": "This earlier record was calculated without multiplying by nights. Editing it will use pricing for the full stay."
+    "legacyBedTotal": "This earlier record was calculated without multiplying by nights. Editing it will use pricing for the full stay.",
+    "bedTitles": {
+      "double": "Bed rate in a double room",
+      "triple": "Bed rate in a triple room",
+      "quadruple": "Bed rate in a quadruple room"
+    },
+    "bedBase": "Bed price per night before taxes",
+    "bedTotal": "Bed price per night including taxes and fees"
   },
-  "legacyRoomRate": "{{type}} price before taxes (SAR)"
+  "legacyRoomRate": "{{type}} price before taxes (SAR)",
+  "contractDetails": "Contract details"
 }

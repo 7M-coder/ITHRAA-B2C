@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   housingPricing,
+  nightlyBedPricing,
   bedRatePricing,
   bedNightPricing,
+  pricedBedNightPricing,
   contractNights,
   toHalalas
 } from '../utils/pricing'
 import { accommodationWriteSchema, accommodationSchema } from '../validations/schemas'
-import { record } from './fixtures'
+import { currentRecord, record } from './fixtures'
 describe('room contract pricing', () => {
   it('prices every room type and applies all taxes to the same base', () => {
     expect(
@@ -48,7 +50,7 @@ describe('room contract pricing', () => {
         { double: 1 }
       )
     ).toBeNull())
-  it('compares contract totals exactly to the halala and requires available room rates', () => {
+  it('accepts independent contract totals and requires available room rates', () => {
     expect(accommodationWriteSchema.safeParse(record).success).toBe(true)
     for (const delta of [-0.01, 0.01])
       expect(
@@ -56,7 +58,7 @@ describe('room contract pricing', () => {
           ...record,
           contractPrice: record.contractPrice + delta
         }).success
-      ).toBe(false)
+      ).toBe(true)
     expect(accommodationWriteSchema.safeParse({ ...record, roomRates: undefined }).success).toBe(
       false
     )
@@ -161,5 +163,46 @@ it('multiplies the nightly bed sum by all period nights before taxes and contrac
     { start: '2027-04-09', end: record.contractEnd }
   ]
   expect(accommodationWriteSchema.safeParse({ ...record, periods }).success).toBe(true)
-  expect(accommodationWriteSchema.safeParse({ ...record, contractPrice: 3875 }).success).toBe(false)
+  expect(accommodationWriteSchema.safeParse({ ...record, contractPrice: 3875 }).success).toBe(true)
+})
+
+it('prices only double, triple and quadruple beds for new contracts', () => {
+  expect(
+    pricedBedNightPricing(currentRecord.rooms, currentRecord.roomRates, currentRecord.periods)
+  ).toEqual({
+    base: 16820000,
+    taxes: { vat: 2523000, city: 504600, accommodation: 841000, collection: 336400 },
+    total: 21025000
+  })
+  expect(accommodationWriteSchema.safeParse(currentRecord).success).toBe(true)
+  expect(
+    accommodationWriteSchema.safeParse({
+      ...currentRecord,
+      contractPrice: record.contractPrice
+    }).success
+  ).toBe(true)
+  expect(
+    pricedBedNightPricing(
+      { ...currentRecord.rooms, double: 50 },
+      currentRecord.roomRates,
+      currentRecord.periods
+    )?.base
+  ).toBe(20300000)
+})
+
+it('taxes each bed rate independently without room counts, nights or a contract total', () => {
+  expect(nightlyBedPricing(100)).toEqual({
+    base: 10000,
+    taxes: { vat: 1500, city: 300, accommodation: 500, collection: 200 },
+    total: 12500
+  })
+  expect(nightlyBedPricing(80)?.total).toBe(10000)
+  expect(nightlyBedPricing(60)?.total).toBe(7500)
+  expect(nightlyBedPricing(0.1)).toEqual({
+    base: 10,
+    taxes: { vat: 2, city: 0, accommodation: 1, collection: 0 },
+    total: 13
+  })
+  expect(nightlyBedPricing(undefined)).toBeNull()
+  expect(nightlyBedPricing(0)?.total).toBe(0)
 })
