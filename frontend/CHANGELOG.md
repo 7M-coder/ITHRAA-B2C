@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Use accessible Lucide icon actions with tooltips in the accommodation table and editor.
+
+- Rename the housing identifier to unified contract number, remove suite entry and display, and add a contract-details heading.
+
+- Seed four clearly synthetic accommodation records once in local storage while preserving existing housing and later edits.
+
+- Show independent per-bed nightly tax tables for double, triple and quadruple rooms, remove contract-price reconciliation, and display total beds per room type.
+
 - Calculate housing contract totals for the full stay by multiplying nightly bed totals by all period nights before applying taxes.
 
 - Show saved accommodation room rates in a table and place the establishment identifier first in entry and detail views.

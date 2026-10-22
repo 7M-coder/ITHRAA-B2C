@@ -1,3 +1,5 @@
+import { Eye, Pencil } from 'lucide-react'
+import { AccommodationActionButton } from '../components/AccommodationActionButton'
 import { useState } from 'react'
 import { Alert, App, Button, Card, Input, Select, Space, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -89,16 +91,20 @@ export default function AccommodationPage() {
               title: t('actions'),
               render: (_, r) => (
                 <Space>
-                  <Button onClick={() => setDetails(r)}>{t('details')}</Button>
-                  <Button
+                  <AccommodationActionButton
+                    label={t('details')}
+                    icon={Eye}
+                    onClick={() => setDetails(r)}
+                  />
+                  <AccommodationActionButton
+                    label={t('edit')}
+                    icon={Pencil}
                     disabled={storageError}
                     onClick={() => {
                       setEditing(r)
                       setOpen(true)
                     }}
-                  >
-                    {t('edit')}
-                  </Button>
+                  />
                 </Space>
               )
             }

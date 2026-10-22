@@ -1,6 +1,6 @@
 import { Form, InputNumber, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { roomTypes } from '../utils/rooms'
+import { bedsPerRoom, pricedRoomTypes } from '../utils/rooms'
 import { accommodationFields, accommodationRules, housingMoneySchema } from '../validations/schemas'
 /** Edits inventory and untaxed rates in a room-type table within the housing form. @returns Room pricing fields. */
 export function AccommodationRoomRates() {
@@ -14,7 +14,7 @@ export function AccommodationRoomRates() {
       bordered
       pagination={false}
       scroll={{ x: 640 }}
-      dataSource={roomTypes.map((key) => ({ key }))}
+      dataSource={pricedRoomTypes.map((key) => ({ key }))}
       columns={[
         { key: 'type', title: t('pricing.roomType'), render: (_, row) => t('rooms.' + row.key) },
         {
@@ -35,26 +35,8 @@ export function AccommodationRoomRates() {
         },
         {
           key: 'beds',
-          title: t('pricing.bedsPerRoom'),
-          render: (_, row) =>
-            row.key === 'suites' ? (
-              <Form.Item
-                className="mb-0!"
-                name="suiteBeds"
-                normalize={(value) => value ?? undefined}
-                dependencies={[['rooms', 'suites']]}
-                rules={accommodationRules(
-                  (rooms?.suites ?? 0) > 0
-                    ? accommodationFields.shape.suiteBeds.unwrap()
-                    : accommodationFields.shape.suiteBeds,
-                  t('errors.suiteBedsRequired')
-                )}
-              >
-                <InputNumber className="w-full!" min={1} aria-label={t('pricing.suiteBeds')} />
-              </Form.Item>
-            ) : (
-              { double: 2, triple: 3, quadruple: 4 }[row.key]
-            )
+          title: t('pricing.bedCount'),
+          render: (_, row) => (rooms?.[row.key] ?? 0) * bedsPerRoom[row.key]
         },
         {
           key: 'rate',
