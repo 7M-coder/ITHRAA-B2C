@@ -1,7 +1,8 @@
+import { AccommodationRatesTable } from './AccommodationRatesTable'
+import { AccommodationPricing } from './AccommodationPricing'
 import { Descriptions, Modal, List } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { Accommodation } from '../types/domain'
-import { roomTypes } from '../utils/rooms'
 interface Props {
   record: Accommodation
   onClose: () => void
@@ -10,10 +11,11 @@ interface Props {
 export function AccommodationDetails({ record, onClose }: Props) {
   const { t, i18n } = useTranslation('accommodation')
   return (
-    <Modal open title={record.name} onCancel={onClose} footer={null}>
+    <Modal open width={850} title={record.name} onCancel={onClose} footer={null}>
       <Descriptions
         column={1}
         items={[
+          { key: 'number', label: t('unifiedNumber'), children: record.unifiedNumber },
           { key: 'city', label: t('city'), children: t(record.city) },
           {
             key: 'classification',
@@ -21,12 +23,6 @@ export function AccommodationDetails({ record, onClose }: Props) {
             children: t('ratings.' + record.classification)
           },
           { key: 'capacity', label: t('capacity'), children: record.capacity },
-          ...roomTypes.map((key) => ({
-            key,
-            label: t('rooms.' + key),
-            children: record.rooms[key]
-          })),
-          { key: 'number', label: t('unifiedNumber'), children: record.unifiedNumber },
           {
             key: 'price',
             label: t('contractPrice'),
@@ -46,6 +42,15 @@ export function AccommodationDetails({ record, onClose }: Props) {
             children: t(record.catering ? (record.board ?? 'no') : 'no')
           }
         ]}
+      />
+      <AccommodationRatesTable record={record} />
+      <AccommodationPricing
+        pricingBasis={record.pricingBasis}
+        periods={record.periods}
+        suiteBeds={record.suiteBeds}
+        rooms={record.rooms}
+        rates={record.roomRates}
+        contractPrice={record.contractPrice}
       />
       <List
         header={t('periods')}

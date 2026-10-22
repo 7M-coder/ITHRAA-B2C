@@ -47,17 +47,37 @@ it('reports storage access failure', async () => {
 it('hydrates older housing without fabricating a price, then requires price on save', async () => {
   localStorage.clear()
   vi.resetModules()
-  const legacy = { ...record, contractPrice: undefined }
+  const legacy = {
+    ...record,
+    contractPrice: undefined,
+    roomRates: undefined,
+    pricingBasis: undefined,
+    unifiedNumber: '001234'
+  }
   localStorage.setItem(key, JSON.stringify({ version: 1, state: { records: [legacy] } }))
   const { useAccommodationStore: store, useAccommodationStorageStatus: status } =
     await import('../hooks/useAccommodationStore')
   expect(status.getState().error).toBe(false)
   expect(store.getState().records[0].contractPrice).toBeUndefined()
   expect(() => store.getState().saveAccommodation(legacy)).toThrow()
-  store.getState().saveAccommodation({ ...legacy, contractPrice: 70000.25 })
+  store.getState().saveAccommodation(record)
   vi.resetModules()
   expect(
     (await import('../hooks/useAccommodationStore')).useAccommodationStore.getState().records[0]
       .contractPrice
-  ).toBe(70000.25)
+  ).toBe(record.contractPrice)
+})
+
+it('rejects a mismatched contract without changing saved data', async () => {
+  localStorage.clear()
+  vi.resetModules()
+  const { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
+  store.getState().saveAccommodation(record)
+  const saved = localStorage.getItem(key)
+  expect(() =>
+    store.getState().saveAccommodation({ ...record, contractPrice: record.contractPrice + 0.01 })
+  ).toThrow()
+  expect(localStorage.getItem(key)).toBe(saved)
+  expect(store.getState().records[0].contractPrice).toBe(record.contractPrice)
+  expect(store.getState().records[0].roomRates).toEqual(record.roomRates)
 })
