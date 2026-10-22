@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Seed six synthetic international flight bookings once in local storage; preserve saved records, edits, deletions and empty lists, with a bilingual demo notice.
+
 - Correct the system identity in the footer, browser title and agent instructions to Internal Direct Hajj Management System.
 
 - Replace the Emirates-only flight workflow with a unified manual booking table and multi-segment editor covering the three reference workbooks; preserve existing local records and independent financial values.

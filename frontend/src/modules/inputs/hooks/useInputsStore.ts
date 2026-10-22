@@ -3,6 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import type { InternationalFlightRequest } from '../types/domain'
 import { flightRequestSchema, flightRequestsSchema } from '../validations/schemas'
 import { migrateFlightState } from '../utils/migration'
+import { createFlightSeed } from '../utils/seed'
 
 // A separate key keeps earlier per-pilgrim flight records intact; their shape is unrelated to PNR requests.
 export const INPUTS_STORAGE_KEY = 'ithraa-b2c-flight-requests-v1'
@@ -12,7 +13,12 @@ let blocked = false
 const storage: StateStorage = {
   getItem: (key) => {
     try {
-      return localStorage.getItem(key)
+      const saved = localStorage.getItem(key)
+      if (saved !== null) return saved
+      // Only an absent key starts a demo. A saved empty list stays empty.
+      const initial = JSON.stringify({ state: { requests: createFlightSeed() }, version: 2 })
+      localStorage.setItem(key, initial)
+      return initial
     } catch {
       blocked = true
       useInputsStorageStatus.setState({ error: true })

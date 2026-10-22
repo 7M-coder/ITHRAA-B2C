@@ -60,6 +60,7 @@ describe('unified flight fields', () => {
   it('saves and rehydrates ordered segments and distinct source amounts', async () => {
     vi.resetModules()
     const { useInputsStore } = await import('../hooks/useInputsStore')
+    const initial = useInputsStore.getState().requests
     const record = {
       ...booking,
       fare: 100,
@@ -71,10 +72,12 @@ describe('unified flight fields', () => {
     }
     useInputsStore.getState().saveRequest(record)
     await useInputsStore.persist.rehydrate()
-    expect(useInputsStore.getState().requests[0]).toMatchObject(record)
+    expect(useInputsStore.getState().requests.find((item) => item.id === record.id)).toMatchObject(
+      record
+    )
     useInputsStore.getState().deleteRequest(record.id)
     await useInputsStore.persist.rehydrate()
-    expect(useInputsStore.getState().requests).toEqual([])
+    expect(useInputsStore.getState().requests).toEqual(initial)
   })
   it('preserves the previous persisted data when saving fails', async () => {
     vi.resetModules()
