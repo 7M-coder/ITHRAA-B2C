@@ -1,7 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flightRequestSchema } from '../validations/schemas'
 import { migrateFlightState } from '../utils/migration'
 import { flightPricing } from '../utils/pricing'
+beforeEach(() => {
+  localStorage.setItem(
+    'ithraa-b2c-flight-requests-v1',
+    JSON.stringify({ version: 3, state: { requests: [] } })
+  )
+})
 const booking = { id: 'test-booking', pnr: 'DEMO', inbound: [], outbound: [] }
 describe('directional flight bookings', () => {
   it('retains zero separately from missing price and rejects invalid input', () => {

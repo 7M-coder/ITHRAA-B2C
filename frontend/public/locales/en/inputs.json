@@ -1,4 +1,5 @@
 {
+  "demoNote": "Synthetic international flight demo data is added only on first use. Additions, edits and deletions are saved locally in this browser.",
   "inputs": "Inputs",
   "internationalFlights": "International flights",
   "flightsDescription": "Arrival and departure flights, optional connections, requested seats and whole-ticket pricing.",

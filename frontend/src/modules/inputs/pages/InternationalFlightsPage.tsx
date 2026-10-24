@@ -196,6 +196,7 @@ export default function InternationalFlightsPage() {
           </Button>
         }
       />
+      <Alert className="mb-5!" type="info" showIcon message={t('demoNote')} />
       {storageError && (
         <Alert className="mb-5!" type="warning" showIcon message={t('storageError')} />
       )}

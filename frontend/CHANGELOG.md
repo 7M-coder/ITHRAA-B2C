@@ -4,6 +4,7 @@
 
 - Organize flights into inbound/outbound journeys and connections, with tax-inclusive round-trip ticket prices, flat profit and currency conversion; archive previous flight data in store v3.
 - Add flat nightly bed profit after base-only taxes, archive the old contract total in accommodation store v2, and defer full-period coverage checks until save.
+- Seed six synthetic international flight bookings once in local storage; preserve saved records, edits, deletions and empty lists, with a bilingual demo notice.
 
 - Correct the system identity in the footer, browser title and agent instructions to Internal Direct Hajj Management System.
 
