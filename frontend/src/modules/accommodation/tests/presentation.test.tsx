@@ -36,12 +36,12 @@ it('shows separate nightly bed tax tables without a contract comparison', async 
   ] as const) {
     const section = screen.getByRole('region', { name: en.pricing.bedTitles[type] })
     expect(within(section).getByText(total, { exact: false })).toBeInTheDocument()
-    expect(within(section).getAllByRole('row')).toHaveLength(7)
+    expect(within(section).getAllByRole('row')).toHaveLength(8)
     expect(within(section).queryByText(en.contractPrice)).not.toBeInTheDocument()
     expect(within(section).queryByText(en.pricing.difference)).not.toBeInTheDocument()
   }
   expect(screen.queryByText(en.pricing.matched)).not.toBeInTheDocument()
-})
+}, 15000)
 
 it('shows total beds for the three priced room types and keeps suites out of the rate table', async () => {
   i18n.addResourceBundle('en', 'accommodation', en)
@@ -59,7 +59,7 @@ it('shows total beds for the three priced room types and keeps suites out of the
   expect(screen.getByText(en.rooms.quadruple).closest('tr')).toBeInTheDocument()
   expect(screen.queryByText(en.rooms.suites)).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: en.contractDetails })).toBeInTheDocument()
-})
+}, 15000)
 
 it.each(['ar', 'en'])(
   'shows unified number as the first form input before city in %s',

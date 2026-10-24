@@ -1,19 +1,22 @@
 import { Form, InputNumber, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { nightlyBedSellingPricing } from '../utils/pricing'
 import { bedsPerRoom, pricedRoomTypes } from '../utils/rooms'
 import { accommodationFields, accommodationRules, housingMoneySchema } from '../validations/schemas'
 /** Edits inventory and untaxed rates in a room-type table within the housing form. @returns Room pricing fields. */
 export function AccommodationRoomRates() {
-  const { t } = useTranslation('accommodation')
+  const { t, i18n } = useTranslation('accommodation')
   const form = Form.useFormInstance()
   const rooms = Form.useWatch('rooms', form)
+  const rates = Form.useWatch('roomRates', form)
+  const profits = Form.useWatch('roomProfits', form)
   return (
     <Table
       rowKey="key"
       size="small"
       bordered
       pagination={false}
-      scroll={{ x: 640 }}
+      scroll={{ x: 1000 }}
       dataSource={pricedRoomTypes.map((key) => ({ key }))}
       columns={[
         { key: 'type', title: t('pricing.roomType'), render: (_, row) => t('rooms.' + row.key) },
@@ -54,12 +57,45 @@ export function AccommodationRoomRates() {
             >
               <InputNumber
                 className="w-full!"
+                changeOnBlur={false}
                 min={0}
                 precision={2}
                 aria-label={t('roomRate', { type: t('rooms.' + row.key) })}
               />
             </Form.Item>
           )
+        },
+        {
+          key: 'profit',
+          title: t('pricing.profit'),
+          render: (_, row) => (
+            <Form.Item
+              className="mb-0!"
+              name={['roomProfits', row.key]}
+              normalize={(value) => value ?? 0}
+              rules={accommodationRules(housingMoneySchema, t('invalid'))}
+            >
+              <InputNumber
+                className="w-full!"
+                changeOnBlur={false}
+                min={0}
+                precision={2}
+                aria-label={t('pricing.profitFor', { type: t('rooms.' + row.key) })}
+              />
+            </Form.Item>
+          )
+        },
+        {
+          key: 'final',
+          title: t('pricing.bedSellingTotal'),
+          render: (_, row) => {
+            const pricing = nightlyBedSellingPricing(rates?.[row.key], profits?.[row.key] ?? 0)
+            return pricing
+              ? new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'SAR' }).format(
+                  pricing.total / 100
+                )
+              : t('notRecorded')
+          }
         }
       ]}
     />

@@ -130,4 +130,8 @@ Keep agent instructions in `AGENTS.md`. Do not create separate requirements, pro
 
 ## Unified flight inputs
 
-International flights use one manual table and form combining the supplied workbook columns. Do not restore format-specific Excel imports. Preserve optional source fields, ordered segments, foreign currencies and historical dates. Financial figures are independent recorded values; do not calculate taxes, conversions or payments. Version 2 of the flight store preserves legacy request IDs and adds empty segment arrays. No real source booking records belong in public seeds.
+International flights use manual bookings with inbound and outbound arrays of stable-ID flights and optional connections. A single PNR and requested seat count replace duplicated source fields. Store v3 archives v1/v2 source records without guessing flight directions or tax-inclusive prices. Allow incomplete records with PNR or a current flight number. Ticket price already includes taxes; add a flat profit in booking currency for the full round trip per person. Convert the final price using SAR=1, USD=3.80, or a manually entered positive EUR rate. Never multiply by seats or add taxes. Preserve historical values for review and local storage failures visibly. No Excel format import or backend calls.
+
+## Accommodation pricing and periods
+
+Store v2 adds flat per-bed/night profits for double, triple and quadruple room types and archives the independent historical contract total. Do not require or show the contract-total input. Final nightly bed price = original base + independent base-only taxes (15%, 3%, 5%, 2%) + flat profit; never tax the profit. Keep exact minor-unit calculations and missing base values distinct from zero. Field validation checks valid dates, bounds and non-overlap during editing. Validate complete first/last contract coverage and adjacency only at save; a partly entered next period must not invalidate the correct previous end date.

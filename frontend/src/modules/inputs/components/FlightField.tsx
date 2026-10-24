@@ -1,27 +1,25 @@
-import { DatePicker, Form, Input, InputNumber, TimePicker } from 'antd'
+import { DatePicker, Form, Input, InputNumber, Select, TimePicker } from 'antd'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { flightRequestSchema, flightSegmentSchema, inputRules } from '../validations/schemas'
-import { countFields, numericFields } from '../utils/fields'
-
+import { flightFields, flightSegmentSchema, inputRules } from '../validations/schemas'
+import { numericFields } from '../utils/fields'
 interface Props {
   field: string
   segmentIndex?: number
   readOnly?: boolean
 }
-/** Renders one translated, schema-validated booking or segment input. @param props - Field identity and segment index. @returns Form field. */
+/** Renders one translated booking or journey field. @param props - Field and optional list index. @returns Validated control. */
 export function FlightField({ field, segmentIndex, readOnly }: Props) {
   const { t } = useTranslation('inputs')
-  const shape =
-    segmentIndex === undefined ? flightRequestSchema.innerType().shape : flightSegmentSchema.shape
-  const schema = shape[field as keyof typeof shape]
-  const date = ['arrivalDate', 'departureDate', 'travelDate'].includes(field)
-  const time = ['departureTime', 'arrivalTime'].includes(field)
+  const shape: Record<string, import('zod').ZodTypeAny> =
+    segmentIndex === undefined ? flightFields.shape : flightSegmentSchema.shape
+  const date = field === 'arrivalDate' || field === 'departureDate'
+  const time = field === 'arrivalTime' || field === 'departureTime'
   return (
     <Form.Item
       name={segmentIndex === undefined ? field : [segmentIndex, field]}
       label={t(`fields.${field}`)}
-      rules={schema ? inputRules(schema, t('errors.value')) : []}
+      rules={shape[field] ? inputRules(shape[field], t('errors.value')) : []}
       getValueProps={
         date || time
           ? (value: string | undefined) => ({
@@ -35,13 +33,22 @@ export function FlightField({ field, segmentIndex, readOnly }: Props) {
         <DatePicker disabled={readOnly} className="w-full!" format="YYYY-MM-DD" />
       ) : time ? (
         <TimePicker disabled={readOnly} className="w-full!" format="HH:mm" />
+      ) : field === 'currency' ? (
+        <Select
+          disabled={readOnly}
+          allowClear
+          options={['SAR', 'EUR', 'USD'].map((value) => ({
+            value,
+            label: t(`currencies.${value}`)
+          }))}
+        />
       ) : numericFields.has(field) ? (
         <InputNumber
-          disabled={readOnly}
+          readOnly={readOnly}
+          changeOnBlur={false}
           className="w-full!"
           min={0}
-          max={field === 'paymentPercentage' ? 100 : undefined}
-          precision={countFields.has(field) ? 0 : undefined}
+          precision={field === 'seats' ? undefined : field === 'euroRate' ? 6 : 2}
         />
       ) : field === 'notes' ? (
         <Input.TextArea readOnly={readOnly} rows={3} />

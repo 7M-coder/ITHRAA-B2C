@@ -30,6 +30,9 @@ it('validates capacity on submission and saves edits with ISO dates', async () =
   await waitFor(() =>
     expect(save).toHaveBeenCalledWith({
       ...currentRecord,
+      contractPrice: undefined,
+      historical: { contractPrice: currentRecord.contractPrice },
+      roomProfits: { double: 0, triple: 0, quadruple: 0 },
       name: 'Updated housing',
       board: undefined
     })
@@ -48,10 +51,14 @@ it('requires a meal plan and clears it when catering is disabled', async () => {
   fireEvent.click(screen.getByRole('radio', { name: 'No' }))
   expect(screen.queryByLabelText('Meal plan')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  await waitFor(() => expect(save).toHaveBeenCalledWith({ ...currentRecord, board: undefined }))
+  await waitFor(() =>
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: currentRecord.id, catering: false, board: undefined })
+    )
+  )
 }, 35000)
 
-it('requires a contract price when editing a legacy housing currentRecord', async () => {
+it('saves without a contract total and adds a flat per-bed profit', async () => {
   const save = vi.fn()
   render(
     <AccommodationForm
@@ -60,27 +67,18 @@ it('requires a contract price when editing a legacy housing currentRecord', asyn
       onSave={save}
     />
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  expect(await screen.findByText(en.errors.priceRequired)).toBeInTheDocument()
-  expect(save).not.toHaveBeenCalled()
-  fireEvent.change(screen.getByLabelText(en.contractPrice), { target: { value: '210250' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  await waitFor(() =>
-    expect(save).toHaveBeenCalledWith({
-      ...currentRecord,
-      contractPrice: currentRecord.contractPrice,
-      board: undefined
-    })
+  expect(screen.queryByLabelText(en.contractPrice)).not.toBeInTheDocument()
+  fireEvent.change(
+    screen.getByLabelText(en.pricing.profitFor.replace('{{type}}', en.rooms.double)),
+    { target: { value: '10' } }
   )
-}, 35000)
-
-it('saves an independent contract value without comparing it with bed rates', async () => {
-  const save = vi.fn()
-  render(<AccommodationForm record={currentRecord} onClose={vi.fn()} onSave={save} />)
-  fireEvent.change(screen.getByLabelText(en.contractPrice), { target: { value: '123' } })
-  expect(screen.queryByText(en.errors.contractMismatch)).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() =>
-    expect(save).toHaveBeenCalledWith({ ...currentRecord, contractPrice: 123, board: undefined })
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roomProfits: { double: 10, triple: 0, quadruple: 0 },
+        contractPrice: undefined
+      })
+    )
   )
 }, 35000)

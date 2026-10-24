@@ -21,12 +21,14 @@ describe('unified manual form', () => {
         <FlightForm open onClose={vi.fn()} onSave={save} />
       </App>
     )
-    await user.click(screen.getByRole('button', { name: 'Add segment' }))
-    fireEvent.change(screen.getByLabelText('Flight number'), { target: { value: 'DEMO123' } })
+    await user.click(screen.getAllByRole('button', { name: 'Add flight' })[0])
+    fireEvent.change(screen.getAllByLabelText('Flight number')[1], { target: { value: 'DEMO123' } })
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(save).toHaveBeenCalledOnce())
-    expect(save.mock.calls[0][0]).toMatchObject({ segments: [{ flightNumber: 'DEMO123' }] })
-    expect(save.mock.calls[0][0].fare).toBeUndefined()
+    expect(save.mock.calls[0][0]).toMatchObject({
+      inbound: [expect.anything(), expect.objectContaining({ flightNumber: 'DEMO123' })]
+    })
+    expect(save.mock.calls[0][0].ticketPrice).toBeUndefined()
   }, 15000)
   it('shows an Arabic identity message for a blank request', async () => {
     await i18n.changeLanguage('ar')

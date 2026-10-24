@@ -4,7 +4,7 @@ import type { Rule } from 'antd/es/form'
 import { isSafeInput } from '@/modules/core/utils/inputSafety'
 import { roomTotal, pricedRoomTypes, roomTypes } from '../utils/rooms'
 import { isAdjacentPeriodStart } from '../utils/periods'
-import { nightlyBedPricing, toHalalas } from '../utils/pricing'
+import { nightlyBedSellingPricing, toHalalas } from '../utils/pricing'
 const text = z.string().trim().min(1).max(200).refine(isSafeInput, 'unsafe')
 export const housingMoneySchema = z
   .number()
@@ -39,6 +39,14 @@ export const accommodationFields = z.object({
     })
     .optional(),
   contractPrice: housingMoneySchema.optional(),
+  historical: z.object({ contractPrice: housingMoneySchema.optional() }).optional(),
+  roomProfits: z
+    .object({
+      double: housingMoneySchema.optional(),
+      triple: housingMoneySchema.optional(),
+      quadruple: housingMoneySchema.optional()
+    })
+    .optional(),
   contractStart: date,
   contractEnd: date,
   periods: z.array(z.object({ start: date, end: date })).min(1),
@@ -97,10 +105,11 @@ export const accommodationWriteSchema = accommodationSchema.superRefine((record,
   )
     ctx.addIssue({ code: 'custom', path: ['suiteBeds'], message: 'suiteBedsRequired' })
   for (const key of pricedRoomTypes)
-    if (record.roomRates?.[key] !== undefined && nightlyBedPricing(record.roomRates[key]) === null)
+    if (
+      record.roomRates?.[key] !== undefined &&
+      nightlyBedSellingPricing(record.roomRates[key], record.roomProfits?.[key] ?? 0) === null
+    )
       ctx.addIssue({ code: 'custom', path: ['roomRates', key], message: 'pricingIncomplete' })
-  if (record.contractPrice === undefined)
-    ctx.addIssue({ code: 'custom', path: ['contractPrice'], message: 'priceRequired' })
 })
 /** Checks related dates, including typed input. @param getValue - Form field reader. @param field - Date role. @param messages - Localized errors. @param index - Period index. @returns Form rules. */
 export function accommodationDateRules(
@@ -136,12 +145,9 @@ export function accommodationDateRules(
           const previous =
             index > 0 ? (getValue(['periods', index - 1, 'end']) as string | undefined) : start
           if (previous && v < previous) throw new Error(messages.order)
-          if (previous && (index === 0 ? v !== previous : !isAdjacentPeriodStart(v, previous)))
-            throw new Error(messages.coverage)
         } else {
-          const periods = getValue('periods') as unknown[] | undefined
-          if (periods && index === periods.length - 1 && end && v !== end)
-            throw new Error(messages.coverage)
+          const nextStart = getValue(['periods', index + 1, 'start']) as string | undefined
+          if (nextStart && v > nextStart) throw new Error(messages.order)
         }
       }
     }

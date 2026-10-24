@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type { Accommodation } from '../types/domain'
 import { accommodationWriteSchema, accommodationsSchema } from '../validations/schemas'
+import { migrateAccommodationState } from '../utils/migration'
 import { createDemoAccommodations } from '../utils/demoData'
 
 // Accommodation storage is isolated from other demo modules.
@@ -19,7 +20,7 @@ const storage: StateStorage = {
         !envelope ||
         typeof envelope !== 'object' ||
         !('version' in envelope) ||
-        envelope.version !== 1 ||
+        (envelope.version !== 1 && envelope.version !== 2) ||
         !('state' in envelope) ||
         !envelope.state ||
         typeof envelope.state !== 'object' ||
@@ -34,12 +35,13 @@ const storage: StateStorage = {
     }
   },
   setItem: (key, value) => {
-    if (blocked) return
+    if (blocked) throw new Error('storage')
     try {
       localStorage.setItem(key, value)
       useAccommodationStorageStatus.setState({ error: false })
     } catch {
       useAccommodationStorageStatus.setState({ error: true })
+      throw new Error('storage')
     }
   },
   removeItem: (key) => {
@@ -60,27 +62,26 @@ interface AccommodationStore {
 /** Persists and manages accommodation records. @returns Zustand store hook. */
 export const useAccommodationStore = create<AccommodationStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       records: [],
       demoSeeded: false,
       saveAccommodation: (candidate) => {
         const request = accommodationWriteSchema.parse(candidate)
         if (blocked || useAccommodationStorageStatus.getState().error) throw new Error('storage')
-        set((state) => ({
-          records: state.records.some((item) => item.id === request.id)
-            ? state.records.map((item) => (item.id === request.id ? request : item))
-            : [...state.records, request]
-        }))
+        const requests = get().records.some((item) => item.id === request.id)
+          ? get().records.map((item) => (item.id === request.id ? request : item))
+          : [...get().records, request]
+        storage.setItem(
+          ACCOMMODATION_STORAGE_KEY,
+          JSON.stringify({ state: { records: requests, demoSeeded: get().demoSeeded }, version: 2 })
+        )
+        set({ records: requests })
       }
     }),
     {
       name: ACCOMMODATION_STORAGE_KEY,
-      version: 1,
-      migrate: () => {
-        blocked = true
-        useAccommodationStorageStatus.setState({ error: true })
-        throw new Error('storageVersion')
-      },
+      version: 2,
+      migrate: migrateAccommodationState,
       storage: createJSONStorage(() => storage),
       partialize: ({ records, demoSeeded }) => ({ records, demoSeeded }),
       merge: (saved, current) => {

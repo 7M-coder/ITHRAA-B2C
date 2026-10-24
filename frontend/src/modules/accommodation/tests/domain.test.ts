@@ -51,10 +51,10 @@ describe('housing invariants', () => {
   })
 })
 
-it('requires a valid price for writes without invalidating old records', () => {
+it('accepts missing historical contract totals and validates any retained amounts', () => {
   const legacy = { ...record, contractPrice: undefined }
   expect(accommodationSchema.safeParse(legacy).success).toBe(true)
-  expect(accommodationWriteSchema.safeParse(legacy).success).toBe(false)
+  expect(accommodationWriteSchema.safeParse(legacy).success).toBe(true)
   for (const price of [-1, Infinity, NaN, 1.001])
     expect(accommodationWriteSchema.safeParse({ ...record, contractPrice: price }).success).toBe(
       false
@@ -123,5 +123,11 @@ it('accepts next-day starts through schema and field validation, but rejects lon
   await expect(rules.validator({}, '2027-05-02')).resolves.toBeUndefined()
   await expect(rules.validator({}, '2027-05-01')).resolves.toBeUndefined()
   await expect(rules.validator({}, '2027-04-30')).rejects.toThrow('order')
-  await expect(rules.validator({}, '2027-05-03')).rejects.toThrow('coverage')
+  await expect(rules.validator({}, '2027-05-03')).resolves.toBeUndefined()
+  expect(
+    accommodationWriteSchema.safeParse({
+      ...values,
+      periods: [periods[0], { start: '2027-05-03', end: '2027-06-05' }]
+    }).success
+  ).toBe(false)
 })

@@ -1,7 +1,7 @@
 {
   "inputs": "Inputs",
   "internationalFlights": "International flights",
-  "flightsDescription": "Unified flight bookings, journey segments, seats, fares and payment fields.",
+  "flightsDescription": "Arrival and departure flights, optional connections, requested seats and whole-ticket pricing.",
   "storageError": "Local data could not be read or saved. Previous data was not replaced; check browser storage.",
   "addFlight": "Add flight request",
   "editFlight": "Edit flight request",
@@ -24,7 +24,8 @@
     "date": "Enter a valid date as YYYY-MM-DD",
     "currency": "Enter a three-letter currency code such as EUR",
     "number": "Enter a positive number within the allowed range",
-    "value": "Enter a valid value. Counts must be whole numbers and amounts cannot be negative."
+    "value": "Enter a valid value. Counts must be whole numbers and amounts cannot be negative.",
+    "dateOrder": "Arrival date must not precede departure date."
   },
   "categoryDescription": "Area for entering and managing operational data.",
   "categoryPending": "Fields and import rules for this section will be defined when its data sample is available.",
@@ -37,10 +38,10 @@
     "mashair": "Holy sites"
   },
   "fields": {
-    "pnr": "Booking reference / PNR",
-    "arrivalDate": "Arrival KSA",
+    "pnr": "Booking reference PNR",
+    "arrivalDate": "Arrival date",
     "arrivalRoute": "Arrival route",
-    "departureDate": "Departure KSA",
+    "departureDate": "Departure date",
     "departureRoute": "Departure route",
     "currency": "Currency",
     "fare": "Fare",
@@ -50,13 +51,13 @@
     "totalFare": "Total fare",
     "recordNumber": "Source record number",
     "airline": "Airline",
-    "country": "Country",
+    "country": "Country of origin",
     "notes": "Notes",
-    "seats": "Number of seats",
+    "seats": "Requested seats",
     "issuedNames": "Issued names (source heading)",
     "bookingFare": "Booking fare",
     "exchangeRate": "Exchange rate to SAR",
-    "sarEquivalent": "SAR equivalent",
+    "sarEquivalent": "Final ticket price in SAR",
     "totalSeatValue": "Total seat value",
     "paymentPercentage": "Payment percentage (%)",
     "firstPayment": "First payment",
@@ -68,7 +69,15 @@
     "departureTime": "Departure time",
     "arrivalTime": "Arrival time",
     "arrivalDayOffset": "Arrival day offset (+days)",
-    "capacity": "Capacity"
+    "capacity": "Capacity",
+    "city": "Departure city",
+    "airport": "Departure airport",
+    "carrier": "Carrier",
+    "destination": "Arrival station",
+    "ticketPrice": "Tax-inclusive round-trip ticket price",
+    "profit": "Flat profit per ticket",
+    "euroRate": "EUR to SAR exchange rate",
+    "finalTicketPrice": "Final ticket price"
   },
   "groups": {
     "booking": "Booking",
@@ -77,15 +86,37 @@
     "pricing": "Pricing",
     "conversion": "Currency conversion",
     "payment": "Payment",
-    "segments": "Journey segments"
+    "segments": "Flights",
+    "inbound": "Arrival",
+    "outbound": "Departure"
   },
-  "manualNote": "Enter the available fields only. A booking reference or flight number is required. Amounts are recorded as entered, without automatic calculations.",
+  "manualNote": "Enter the available details. A booking reference or flight number is needed. Older records remain available for review.",
   "paymentNote": "Optional source summary fields. Country totals are not automatically assigned to this booking.",
-  "identityRequired": "Enter a booking reference or a flight number in a journey segment.",
+  "identityRequired": "Enter a booking reference or flight number.",
   "viewFlight": "View flight request",
-  "segment": "Segment {{number}}",
-  "addSegment": "Add segment",
+  "segment": "Flight {{number}}",
+  "addSegment": "Add flight",
   "moveUp": "Move up",
   "discard": "Discard unsaved changes?",
-  "discardAction": "Discard"
+  "discardAction": "Discard",
+  "firstFlight": "First flight",
+  "connection": "Connection {{number}}",
+  "addFlightLeg": "Add flight",
+  "ticketPricingNote": "One price per person for the complete round trip and all connections. Taxes are already included; profit is a flat amount in the booking currency.",
+  "incomplete": "Incomplete",
+  "currencies": {
+    "SAR": "Saudi riyal",
+    "EUR": "Euro",
+    "USD": "US dollar"
+  },
+  "history": {
+    "title": "Historical data — review",
+    "note": "Old prices are not assumed to include taxes. Flights have not been assigned a direction. Review this data and enter the new fields manually.",
+    "fields": {
+      "segments": "Unclassified previous flights",
+      "airline": "Previous airline",
+      "recordNumber": "Previous source record number"
+    },
+    "sourceValue": "Previous source value"
+  }
 }

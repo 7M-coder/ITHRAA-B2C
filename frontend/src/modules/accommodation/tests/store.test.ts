@@ -110,7 +110,11 @@ it('adds demo housing to existing local data without replacing user records', as
   vi.resetModules()
   const { useAccommodationStore: store } = await import('../hooks/useAccommodationStore')
   expect(store.getState().records).toHaveLength(5)
-  expect(store.getState().records[0]).toMatchObject(record)
+  expect(store.getState().records[0]).toMatchObject({
+    ...record,
+    contractPrice: undefined,
+    historical: { contractPrice: record.contractPrice }
+  })
   await store.persist.rehydrate()
   expect(store.getState().records).toHaveLength(5)
 })

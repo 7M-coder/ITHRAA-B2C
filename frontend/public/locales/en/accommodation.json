@@ -71,7 +71,7 @@
   "roomRate": "{{type}} bed price per night before taxes (SAR)",
   "pricing": {
     "title": "Contract pricing summary",
-    "rateHelp": "Enter the price of one bed per night for each room type before taxes. Taxes and fees are calculated separately for each rate.",
+    "rateHelp": "Enter the base nightly bed rate and a flat profit for each room type. Taxes apply only to the base rate.",
     "legacySuitePricing": "This previously saved contract includes suite rates in its full-stay base.",
     "legacySuiteRate": "Suite bed price per night before taxes (previously saved)",
     "base": "Base amount before taxes",
@@ -102,7 +102,10 @@
       "quadruple": "Bed rate in a quadruple room"
     },
     "bedBase": "Bed price per night before taxes",
-    "bedTotal": "Bed price per night including taxes and fees"
+    "bedTotal": "Bed price per night including taxes and fees",
+    "profit": "Flat profit per bed/night (SAR)",
+    "profitFor": "Profit per bed/night — {{type}}",
+    "bedSellingTotal": "Final bed price per night including taxes and profit"
   },
   "legacyRoomRate": "{{type}} price before taxes (SAR)",
   "contractDetails": "Contract details"

@@ -37,10 +37,12 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const { t } = useTranslation('accommodation')
   const [form] = Form.useForm<Accommodation>()
   const [errors, setErrors] = useState<string[]>([])
+  const [coverageError, setCoverageError] = useState(false)
   const city = Form.useWatch('city', form)
   const catering = Form.useWatch('catering', form)
   const rooms = Form.useWatch('rooms', form)
   const roomRates = Form.useWatch('roomRates', form)
+  const roomProfits = Form.useWatch('roomProfits', form)
   const capacity = Form.useWatch('capacity', form)
   const contractStart = Form.useWatch('contractStart', form)
   const contractEnd = Form.useWatch('contractEnd', form)
@@ -64,6 +66,10 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
   const submit = (values: Accommodation) => {
     const result = accommodationWriteSchema.safeParse({
       ...values,
+      historical:
+        record?.historical ??
+        (record?.contractPrice === undefined ? undefined : { contractPrice: record.contractPrice }),
+      contractPrice: undefined,
       rooms: { ...values.rooms, suites: 0 },
       suiteBeds: undefined,
       roomRates: values.roomRates ? { ...values.roomRates, suites: undefined } : undefined,
@@ -71,32 +77,48 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
       id: record?.id ?? crypto.randomUUID()
     })
     if (!result.success) {
+      setCoverageError(result.error.issues.some((issue) => issue.message === 'coverage'))
+      form.setFields(
+        result.error.issues
+          .filter((issue) => issue.path[0] === 'periods' && issue.message !== 'coverage')
+          .map((issue) => ({
+            name: ['periods', Number(issue.path[1]), issue.path[2] === 'end' ? 'end' : 'start'] as [
+              'periods',
+              number,
+              'start' | 'end'
+            ],
+            errors: [t('errors.' + (issue.message === 'range' ? 'dateRange' : 'invalid'))]
+          }))
+      )
       setErrors([
         ...new Set(
-          result.error.issues.map((i) =>
-            t(
-              'errors.' +
-                ([
-                  'capacity',
-                  'range',
-                  'coverage',
-                  'required',
-                  'priceRequired',
-                  'reference',
-                  'rateRequired',
-                  'pricingIncomplete',
-                  'contractMismatch',
-                  'legacyRates'
-                ].includes(i.message)
-                  ? i.message
-                  : 'invalid')
+          result.error.issues
+            .filter((issue) => issue.message !== 'coverage')
+            .map((i) =>
+              t(
+                'errors.' +
+                  ([
+                    'capacity',
+                    'range',
+                    'coverage',
+                    'required',
+                    'priceRequired',
+                    'reference',
+                    'rateRequired',
+                    'pricingIncomplete',
+                    'contractMismatch',
+                    'legacyRates'
+                  ].includes(i.message)
+                    ? i.message
+                    : 'invalid')
+              )
             )
-          )
         )
       ])
       return
     }
     setErrors([])
+    setCoverageError(false)
     onSave(result.data)
   }
   return (
@@ -126,10 +148,15 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
         form={form}
         layout="vertical"
         onFinish={submit}
+        onValuesChange={() => {
+          setErrors([])
+          setCoverageError(false)
+        }}
         initialValues={
           record
             ? {
                 ...record,
+                roomProfits: record.roomProfits ?? { double: 0, triple: 0, quadruple: 0 },
                 roomRates:
                   record.pricingBasis === 'bed_night' ||
                   record.pricingBasis === 'bed_rate_total' ||
@@ -140,6 +167,7 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
             : {
                 rooms: { double: 0, triple: 0, quadruple: 0, suites: 0 },
                 catering: false,
+                roomProfits: { double: 0, triple: 0, quadruple: 0 },
                 periods: [{}]
               }
         }
@@ -200,17 +228,11 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
                 remaining: (capacity ?? 0) - roomTotal(rooms)
               })}
             />
-            <Form.Item
-              name="contractPrice"
-              label={t('contractPrice')}
-              rules={accommodationRules(
-                accommodationFields.shape.contractPrice.unwrap(),
-                t('errors.priceRequired')
-              )}
-            >
-              <InputNumber className="w-full!" min={0} precision={2} />
-            </Form.Item>
-            <AccommodationPricing rates={roomRates} pricingBasis="bed_night_three" />
+            <AccommodationPricing
+              rates={roomRates}
+              profits={roomProfits}
+              pricingBasis="bed_night_three"
+            />
             <Typography.Title level={5}>{t('contractDetails')}</Typography.Title>
             <div className="grid gap-x-4 sm:grid-cols-2">
               {(['contractStart', 'contractEnd'] as const).map((key) => (
@@ -302,6 +324,9 @@ export function AccommodationForm({ record, onClose, onSave }: Props) {
                 </div>
               )}
             </Form.List>
+            {coverageError && (
+              <Alert className="mt-3!" type="error" showIcon message={t('errors.coverage')} />
+            )}
             <Form.Item className="mt-5!" name="catering" label={t('catering')}>
               <Radio.Group
                 onChange={(e) => {

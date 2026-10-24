@@ -1,6 +1,7 @@
 import { Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { Accommodation } from '../types/domain'
+import { nightlyBedSellingPricing } from '../utils/pricing'
 import { bedsPerRoom, pricedRoomTypes } from '../utils/rooms'
 interface Props {
   record: Accommodation
@@ -49,6 +50,31 @@ export function AccommodationRatesTable({ record }: Props) {
                     style: 'currency',
                     currency: 'SAR'
                   }).format(record.roomRates[row.key]!)
+          },
+          {
+            key: 'profit',
+            title: t('pricing.profit'),
+            render: (_, row) =>
+              new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'SAR' }).format(
+                record.roomProfits?.[row.key as 'double' | 'triple' | 'quadruple'] ?? 0
+              )
+          },
+          {
+            key: 'final',
+            title: t('pricing.bedSellingTotal'),
+            render: (_, row) => {
+              if (!perBed) return t('notRecorded')
+              const pricing = nightlyBedSellingPricing(
+                record.roomRates?.[row.key],
+                record.roomProfits?.[row.key as 'double' | 'triple' | 'quadruple'] ?? 0
+              )
+              return pricing
+                ? new Intl.NumberFormat(i18n.language, {
+                    style: 'currency',
+                    currency: 'SAR'
+                  }).format(pricing.total / 100)
+                : t('notRecorded')
+            }
           }
         ]}
       />

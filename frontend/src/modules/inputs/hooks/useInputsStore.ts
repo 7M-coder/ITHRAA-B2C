@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type { InternationalFlightRequest } from '../types/domain'
-import { flightRequestSchema, flightRequestsSchema } from '../validations/schemas'
+import { flightWriteSchema, flightRequestsSchema } from '../validations/schemas'
 import { migrateFlightState } from '../utils/migration'
 
 // A separate key keeps earlier per-pilgrim flight records intact; their shape is unrelated to PNR requests.
@@ -50,24 +50,24 @@ export const useInputsStore = create<InputsStore>()(
     (set, get) => ({
       requests: [],
       saveRequest: (candidate) => {
-        const request = flightRequestSchema.parse(candidate)
+        const request = flightWriteSchema.parse(candidate)
         if (blocked) throw new Error('storage')
         const requests = get().requests.some((item) => item.id === request.id)
           ? get().requests.map((item) => (item.id === request.id ? request : item))
           : [...get().requests, request]
-        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 2 }))
+        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 3 }))
         set({ requests })
       },
       deleteRequest: (id) => {
         if (blocked) throw new Error('storage')
         const requests = get().requests.filter((item) => item.id !== id)
-        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 2 }))
+        storage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ state: { requests }, version: 3 }))
         set({ requests })
       }
     }),
     {
       name: INPUTS_STORAGE_KEY,
-      version: 2,
+      version: 3,
       migrate: migrateFlightState,
       storage: createJSONStorage(() => storage),
       partialize: ({ requests }) => ({ requests }),

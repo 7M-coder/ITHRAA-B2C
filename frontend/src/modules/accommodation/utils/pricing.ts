@@ -126,3 +126,11 @@ export function bedRatePricing(
   }
   return housingPricing(beds, rates)
 }
+
+/** Adds a flat per-bed nightly profit after taxes on the original base. @param rate - Untaxed nightly bed rate. @param profit - Flat nightly profit in SAR. @returns Tax breakdown and final minor-unit price or null. */
+export function nightlyBedSellingPricing(rate: unknown, profit: unknown = 0) {
+  const pricing = nightlyBedPricing(rate)
+  const margin = toHalalas(profit)
+  if (!pricing || margin === null || !Number.isSafeInteger(pricing.total + margin)) return null
+  return { ...pricing, profit: margin, total: pricing.total + margin }
+}

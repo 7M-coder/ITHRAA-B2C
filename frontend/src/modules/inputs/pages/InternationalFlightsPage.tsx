@@ -7,7 +7,8 @@ import { PageHeader } from '@/modules/core/components/PageHeader'
 import { FlightForm } from '../components/FlightForm'
 import { useInputsStore, useInputsStorageStatus } from '../hooks/useInputsStore'
 import type { InternationalFlightRequest } from '../types/domain'
-import { fieldGroups, segmentFields } from '../utils/fields'
+import { bookingFields, segmentFields } from '../utils/fields'
+import { flightPricing } from '../utils/pricing'
 
 /** Formats missing values without conflating them with zero. @param value - Field value. @returns Display text. */
 function display(value: unknown) {
@@ -36,40 +37,82 @@ export default function InternationalFlightsPage() {
       ),
     [requests, search]
   )
-  const segmentCount = Math.max(1, ...requests.map((record) => record.segments.length))
   const columns: ColumnsType<InternationalFlightRequest> = [
-    ...Object.entries(fieldGroups).map(([group, fields]) => ({
-      title: t(`groups.${group}`),
-      key: group,
-      onHeaderCell: () => ({ className: `flight-header-${group}` }),
-      children: fields.map((field, fieldIndex) => ({
+    {
+      title: t('groups.booking'),
+      key: 'booking',
+      onHeaderCell: () => ({ className: 'flight-header-booking' }),
+      children: bookingFields.map((field, index) => ({
         title: t(`fields.${field}`),
         key: field,
         dataIndex: field,
-        className: fieldIndex === 0 ? 'flight-group-start' : undefined,
-        onHeaderCell: () => ({
-          className: `flight-header-${group} ${fieldIndex === 0 ? 'flight-group-start' : ''}`
-        }),
-        width: field === 'notes' ? 240 : 160,
+        width: 180,
+        className: index === 0 ? 'flight-group-start' : undefined,
+        onHeaderCell: () => ({ className: 'flight-header-booking' }),
         render: display
       }))
-    })),
-    ...Array.from({ length: segmentCount }, (_, index) => ({
-      title: t('segment', { number: index + 1 }),
-      key: `segment-${index}`,
-      onHeaderCell: () => ({ className: `flight-header-segment-${index % 3}` }),
-      children: segmentFields.map((field, fieldIndex) => ({
+    },
+    ...(['inbound', 'outbound'] as const).flatMap((direction, directionIndex) =>
+      Array.from(
+        { length: Math.max(1, ...requests.map((record) => record[direction].length)) },
+        (_, index) => ({
+          title:
+            index === 0
+              ? t(`groups.${direction}`)
+              : `${t(`groups.${direction}`)} · ${t('connection', { number: index })}`,
+          key: `${direction}-${index}`,
+          onHeaderCell: () => ({
+            className: `flight-header-segment-${(directionIndex + index) % 3}`
+          }),
+          children: segmentFields.map((field, fieldIndex) => ({
+            title: t(`fields.${field}`),
+            key: `${direction}-${index}-${field}`,
+            width: 170,
+            className: fieldIndex === 0 ? 'flight-group-start' : undefined,
+            onHeaderCell: () => ({
+              className: `flight-header-segment-${(directionIndex + index) % 3}`
+            }),
+            render: (_: unknown, record: InternationalFlightRequest) =>
+              display(record[direction][index]?.[field])
+          }))
+        })
+      )
+    ),
+    {
+      title: t('groups.pricing'),
+      key: 'pricing',
+      onHeaderCell: () => ({ className: 'flight-header-pricing' }),
+      children: [
+        'currency',
+        'ticketPrice',
+        'profit',
+        'finalTicketPrice',
+        'exchangeRate',
+        'sarEquivalent'
+      ].map((field, index) => ({
         title: t(`fields.${field}`),
-        key: `${index}-${field}`,
-        className: fieldIndex === 0 ? 'flight-group-start' : undefined,
-        onHeaderCell: () => ({
-          className: `flight-header-segment-${index % 3} ${fieldIndex === 0 ? 'flight-group-start' : ''}`
-        }),
-        width: 160,
-        render: (_: unknown, record: InternationalFlightRequest) =>
-          display(record.segments[index]?.[field])
+        key: field,
+        width: 180,
+        className: index === 0 ? 'flight-group-start' : undefined,
+        onHeaderCell: () => ({ className: 'flight-header-pricing' }),
+        render: (_: unknown, record: InternationalFlightRequest) => {
+          const pricing = flightPricing(record)
+          if (field === 'finalTicketPrice')
+            return pricing ? (pricing.final / 100).toFixed(2) : t('incomplete')
+          if (field === 'sarEquivalent')
+            return pricing?.sar !== null && pricing?.sar !== undefined
+              ? (pricing.sar / 100).toFixed(2)
+              : t('incomplete')
+          if (field === 'exchangeRate')
+            return display(
+              record.currency === 'USD' ? 3.8 : record.currency === 'SAR' ? 1 : record.euroRate
+            )
+          if (field === 'ticketPrice' || field === 'profit')
+            return record[field] === undefined ? '—' : record[field]!.toFixed(2)
+          return record.currency ? t(`currencies.${record.currency}`) : '—'
+        }
       }))
-    })),
+    },
     {
       title: t('actions'),
       key: 'actions',
