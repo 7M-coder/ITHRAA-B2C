@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import type { Rule } from 'antd/es/form'
+import { journeyIssues } from '../utils/journeys'
 import { isSafeInput } from '@/modules/core/utils/inputSafety'
+/** Allows English text, numbers and ordinary ASCII punctuation only. @param value - Entered field value. @returns Whether input contains no Arabic or other non-English characters. */
+export function isEnglishFlightInput(value: unknown): boolean {
+  return typeof value !== 'string' || /^[\x20-\x7E\r\n\t]*$/.test(value)
+}
+export const englishFlightInputSchema = z.unknown().refine(isEnglishFlightInput)
 const text = z.string().trim().max(200).refine(isSafeInput)
 /** Treats cleared optional controls as absent rather than zero. @param value - Form value. @returns Normalized value. */
 const empty = (value: unknown) => (value === '' || value === null ? undefined : value)
@@ -69,6 +75,17 @@ export const flightRequestSchema = flightFields.superRefine((record, ctx) => {
     })
 })
 export const flightWriteSchema = flightRequestSchema.superRefine((record, ctx) => {
+  for (const field of ['pnr', 'country', 'notes'] as const)
+    if (!isEnglishFlightInput(record[field]))
+      ctx.addIssue({ code: 'custom', path: [field], message: 'englishOnly' })
+  for (const direction of ['inbound', 'outbound'] as const)
+    record[direction].forEach((leg, index) => {
+      for (const field of ['city', 'airport', 'carrier', 'flightNumber', 'destination'] as const)
+        if (!isEnglishFlightInput(leg[field]))
+          ctx.addIssue({ code: 'custom', path: [direction, index, field], message: 'englishOnly' })
+    })
+
+  for (const issue of journeyIssues(record)) ctx.addIssue({ code: 'custom', ...issue })
   if (!record.pnr && ![...record.inbound, ...record.outbound].some((leg) => leg.flightNumber))
     ctx.addIssue({ code: 'custom', path: ['pnr'], message: 'identity' })
 })

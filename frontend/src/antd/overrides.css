@@ -148,3 +148,18 @@ a:focus-visible {
 .flight-groups-table .ant-table-cell.flight-group-start {
   border-inline-start: 2px solid var(--flight-group-border) !important;
 }
+
+/* Square flight-table edges keep fixed action cells aligned with the grid. */
+.flight-groups-table .ant-table,
+.flight-groups-table .ant-table-container,
+.flight-groups-table .ant-table-content,
+.flight-groups-table .ant-table-thead > tr > th {
+  border-radius: 0 !important;
+}
+.flight-groups-table .ant-table-thead > tr > th.flight-header-actions {
+  background: var(--color-surface);
+}
+.flight-groups-table .ant-table-cell-fix-left::after,
+.flight-groups-table .ant-table-cell-fix-right::after {
+  box-shadow: none !important;
+}

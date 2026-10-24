@@ -105,7 +105,8 @@
     "bedTotal": "Bed price per night including taxes and fees",
     "profit": "Flat profit per bed/night (SAR)",
     "profitFor": "Profit per bed/night — {{type}}",
-    "bedSellingTotal": "Final bed price per night including taxes and profit"
+    "bedSellingTotal": "Final bed price per night including taxes and profit",
+    "bedBeforeTaxWithProfit": "Bed price per night including profit, before taxes"
   },
   "legacyRoomRate": "{{type}} price before taxes (SAR)",
   "contractDetails": "Contract details"

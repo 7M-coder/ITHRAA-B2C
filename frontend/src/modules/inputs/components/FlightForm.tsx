@@ -15,7 +15,7 @@ interface Props {
   onClose: () => void
   onSave: (request: InternationalFlightRequest) => void
 }
-/** Edits round-trip bookings and directional connections. @param props - Drawer controls and selected record. @returns Booking drawer. */
+/** Edits inbound and outbound journeys with paired departure/arrival details. @param props - Drawer controls and selected record. @returns Booking drawer. */
 export function FlightForm({ open, request, readOnly, onClose, onSave }: Props) {
   const { t } = useTranslation('inputs')
   const { modal } = App.useApp()
@@ -38,17 +38,31 @@ export function FlightForm({ open, request, readOnly, onClose, onSave }: Props) 
     const parsed = flightWriteSchema.safeParse({
       ...values,
       id: request?.id ?? crypto.randomUUID(),
-      historical: request?.historical,
+      historical: request?.notes
+        ? { ...request.historical, notes: request.notes }
+        : request?.historical,
       inbound: values.inbound ?? [],
       outbound: values.outbound ?? []
     })
     if (!parsed.success) {
       form.setFields(
         parsed.error.issues
-          .filter((issue) => issue.path[0] !== 'pnr')
+          .filter((issue) => issue.message !== 'identity')
           .map((issue) => ({
             name: issue.path,
-            errors: [t(issue.message === 'dateOrder' ? 'errors.dateOrder' : 'errors.value')]
+            errors: [
+              t(
+                [
+                  'dateOrder',
+                  'arrivalOrder',
+                  'connectionOrder',
+                  'returnOrder',
+                  'englishOnly'
+                ].includes(issue.message)
+                  ? `errors.${issue.message}`
+                  : 'errors.value'
+              )
+            ]
           }))
       )
       setError(
@@ -92,6 +106,12 @@ export function FlightForm({ open, request, readOnly, onClose, onSave }: Props) 
         onValuesChange={() => {
           setDirty(true)
           setError(undefined)
+          form.setFields(
+            form
+              .getFieldsError()
+              .filter((field) => field.errors.length)
+              .map((field) => ({ name: field.name, errors: [] }))
+          )
         }}
         onFinish={submit}
       >

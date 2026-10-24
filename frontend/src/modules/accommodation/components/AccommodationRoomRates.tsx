@@ -87,12 +87,12 @@ export function AccommodationRoomRates() {
         },
         {
           key: 'final',
-          title: t('pricing.bedSellingTotal'),
+          title: t('pricing.bedBeforeTaxWithProfit'),
           render: (_, row) => {
             const pricing = nightlyBedSellingPricing(rates?.[row.key], profits?.[row.key] ?? 0)
             return pricing
               ? new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'SAR' }).format(
-                  pricing.total / 100
+                  (pricing.base + pricing.profit) / 100
                 )
               : t('notRecorded')
           }

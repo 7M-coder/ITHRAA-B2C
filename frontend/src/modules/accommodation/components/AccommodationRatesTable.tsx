@@ -61,7 +61,7 @@ export function AccommodationRatesTable({ record }: Props) {
           },
           {
             key: 'final',
-            title: t('pricing.bedSellingTotal'),
+            title: t('pricing.bedBeforeTaxWithProfit'),
             render: (_, row) => {
               if (!perBed) return t('notRecorded')
               const pricing = nightlyBedSellingPricing(
@@ -72,7 +72,7 @@ export function AccommodationRatesTable({ record }: Props) {
                 ? new Intl.NumberFormat(i18n.language, {
                     style: 'currency',
                     currency: 'SAR'
-                  }).format(pricing.total / 100)
+                  }).format((pricing.base + pricing.profit) / 100)
                 : t('notRecorded')
             }
           }

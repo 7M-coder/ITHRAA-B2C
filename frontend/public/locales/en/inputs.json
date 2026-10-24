@@ -26,7 +26,11 @@
     "currency": "Enter a three-letter currency code such as EUR",
     "number": "Enter a positive number within the allowed range",
     "value": "Enter a valid value. Counts must be whole numbers and amounts cannot be negative.",
-    "dateOrder": "Arrival date must not precede departure date."
+    "dateOrder": "Arrival date must not precede departure date.",
+    "connectionOrder": "The connection must depart after the previous flight arrives.",
+    "returnOrder": "The return must depart after the last inbound flight arrives.",
+    "arrivalOrder": "Arrival must follow departure, accounting for airport time zones.",
+    "englishOnly": "Enter data in English only."
   },
   "categoryDescription": "Area for entering and managing operational data.",
   "categoryPending": "Fields and import rules for this section will be defined when its data sample is available.",
@@ -89,7 +93,8 @@
     "payment": "Payment",
     "segments": "Flights",
     "inbound": "Arrival",
-    "outbound": "Departure"
+    "outbound": "Departure",
+    "journeys": "Flights"
   },
   "manualNote": "Enter the available details. A booking reference or flight number is needed. Older records remain available for review.",
   "paymentNote": "Optional source summary fields. Country totals are not automatically assigned to this booking.",
@@ -101,7 +106,7 @@
   "discard": "Discard unsaved changes?",
   "discardAction": "Discard",
   "firstFlight": "First flight",
-  "connection": "Connection {{number}}",
+  "connection": "Transit {{number}}",
   "addFlightLeg": "Add flight",
   "ticketPricingNote": "One price per person for the complete round trip and all connections. Taxes are already included; profit is a flat amount in the booking currency.",
   "incomplete": "Incomplete",
@@ -119,5 +124,48 @@
       "recordNumber": "Previous source record number"
     },
     "sourceValue": "Previous source value"
+  },
+  "journeyNumber": "Flight {{number}}",
+  "selectData": {
+    "country": {
+      "Saudi Arabia": "Saudi Arabia",
+      "Germany": "Germany",
+      "United Kingdom": "United Kingdom",
+      "Indonesia": "Indonesia",
+      "Malaysia": "Malaysia",
+      "Turkey": "Turkey",
+      "France": "France"
+    },
+    "city": {
+      "Jeddah": "Jeddah",
+      "Madinah": "Madinah",
+      "Dubai": "Dubai",
+      "Doha": "Doha",
+      "Frankfurt": "Frankfurt",
+      "London": "London",
+      "Jakarta": "Jakarta",
+      "Kuala Lumpur": "Kuala Lumpur",
+      "Istanbul": "Istanbul",
+      "Paris": "Paris"
+    },
+    "airport": {
+      "JED": "King Abdulaziz International Airport",
+      "MED": "Prince Mohammad bin Abdulaziz International Airport",
+      "DXB": "Dubai International Airport",
+      "DOH": "Hamad International Airport",
+      "FRA": "Frankfurt Airport",
+      "LHR": "Heathrow Airport",
+      "CGK": "Soekarno-Hatta International Airport",
+      "KUL": "Kuala Lumpur International Airport",
+      "IST": "Istanbul Airport",
+      "CDG": "Charles de Gaulle Airport"
+    },
+    "carrier": {
+      "Saudia": "Saudia",
+      "Emirates": "Emirates",
+      "Qatar Airways": "Qatar Airways",
+      "Garuda Indonesia": "Garuda Indonesia",
+      "Turkish Airlines": "Turkish Airlines"
+    }
   }
 }

@@ -1,25 +1,46 @@
 import { DatePicker, Form, Input, InputNumber, Select, TimePicker } from 'antd'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { flightFields, flightSegmentSchema, inputRules } from '../validations/schemas'
+import {
+  flightFields,
+  flightSegmentSchema,
+  inputRules,
+  isEnglishFlightInput,
+  englishFlightInputSchema
+} from '../validations/schemas'
+import { flightReferenceLabel, flightSelectOptions } from '../utils/selectOptions'
 import { numericFields } from '../utils/fields'
 interface Props {
   field: string
+  direction?: 'inbound' | 'outbound'
   segmentIndex?: number
   readOnly?: boolean
 }
 /** Renders one translated booking or journey field. @param props - Field and optional list index. @returns Validated control. */
-export function FlightField({ field, segmentIndex, readOnly }: Props) {
+export function FlightField({ field, segmentIndex, direction = 'inbound', readOnly }: Props) {
   const { t } = useTranslation('inputs')
   const shape: Record<string, import('zod').ZodTypeAny> =
     segmentIndex === undefined ? flightFields.shape : flightSegmentSchema.shape
+  const form = Form.useFormInstance()
+  const selected = Form.useWatch(
+    segmentIndex === undefined ? field : [direction, segmentIndex, field],
+    form
+  ) as string | undefined
+  const choices = flightSelectOptions[field]
   const date = field === 'arrivalDate' || field === 'departureDate'
   const time = field === 'arrivalTime' || field === 'departureTime'
   return (
     <Form.Item
       name={segmentIndex === undefined ? field : [segmentIndex, field]}
       label={t(`fields.${field}`)}
-      rules={shape[field] ? inputRules(shape[field], t('errors.value')) : []}
+      rules={
+        shape[field]
+          ? [
+              ...inputRules(shape[field], t('errors.value')),
+              ...inputRules(englishFlightInputSchema, t('errors.englishOnly'))
+            ]
+          : []
+      }
       getValueProps={
         date || time
           ? (value: string | undefined) => ({
@@ -39,7 +60,27 @@ export function FlightField({ field, segmentIndex, readOnly }: Props) {
           allowClear
           options={['SAR', 'EUR', 'USD'].map((value) => ({
             value,
-            label: t(`currencies.${value}`)
+            label: value
+          }))}
+        />
+      ) : choices ? (
+        <Select
+          disabled={readOnly}
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          onSearch={(search) => {
+            if (!isEnglishFlightInput(search))
+              form.setFields([
+                {
+                  name: segmentIndex === undefined ? field : [direction, segmentIndex, field],
+                  errors: [t('errors.englishOnly')]
+                }
+              ])
+          }}
+          options={[...new Set([...choices, ...(selected ? [selected] : [])])].map((value) => ({
+            value,
+            label: flightReferenceLabel(field, value)
           }))}
         />
       ) : numericFields.has(field) ? (

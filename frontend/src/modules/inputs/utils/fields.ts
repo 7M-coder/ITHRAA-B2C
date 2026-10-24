@@ -1,4 +1,4 @@
-export const bookingFields = ['pnr', 'country', 'notes', 'seats'] as const
+export const bookingFields = ['pnr', 'country', 'seats'] as const
 export const pricingFields = ['currency', 'ticketPrice', 'profit', 'euroRate'] as const
 export const segmentFields = [
   'city',

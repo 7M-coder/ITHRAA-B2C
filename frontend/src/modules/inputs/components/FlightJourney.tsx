@@ -1,29 +1,29 @@
 import { Button, Card, Form, Input, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FlightField } from './FlightField'
+import { connectionDefaults } from '../utils/journeys'
 import { segmentFields } from '../utils/fields'
 interface Props {
   direction: 'inbound' | 'outbound'
   readOnly?: boolean
 }
-/** Edits a direction's first flight and optional onward connections. @param props - Direction and view mode. @returns Ordered journey controls. */
+/** Edits a booking flights, each containing departure and arrival. @param props - View mode. @returns Ordered journey controls. */
 export function FlightJourney({ direction, readOnly }: Props) {
+  const form = Form.useFormInstance()
   const { t } = useTranslation('inputs')
   return (
     <section className="mb-6 space-y-4">
       <h2 className="text-lg font-semibold">{t(`groups.${direction}`)}</h2>
       <Form.List name={direction}>
-        {(fields, { add, remove, move }) => (
+        {(fields, { add, remove }) => (
           <Space direction="vertical" className="w-full!" size="middle">
             {fields.map(({ key, name }, index) => (
               <Card
                 key={key}
-                title={index === 0 ? t('firstFlight') : t('connection', { number: index })}
+                title={t('journeyNumber', { number: index + 1 })}
                 extra={
-                  !readOnly &&
-                  index > 0 && (
+                  !readOnly && (
                     <Space wrap>
-                      <Button onClick={() => move(index, index - 1)}>{t('moveUp')}</Button>
                       <Button danger onClick={() => remove(name)}>
                         {t('delete')}
                       </Button>
@@ -40,6 +40,7 @@ export function FlightJourney({ direction, readOnly }: Props) {
                       key={field}
                       field={field}
                       segmentIndex={name}
+                      direction={direction}
                       readOnly={readOnly}
                     />
                   ))}
@@ -47,7 +48,14 @@ export function FlightJourney({ direction, readOnly }: Props) {
               </Card>
             ))}
             {!readOnly && (
-              <Button onClick={() => add({ id: crypto.randomUUID() })}>{t('addFlightLeg')}</Button>
+              <Button
+                onClick={() => {
+                  const legs = form.getFieldValue(direction) ?? []
+                  add({ id: crypto.randomUUID(), ...connectionDefaults(legs.at(-1)) })
+                }}
+              >
+                {t('addFlightLeg')}
+              </Button>
             )}
           </Space>
         )}

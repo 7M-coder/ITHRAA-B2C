@@ -30,6 +30,39 @@ describe('unified manual form', () => {
     })
     expect(save.mock.calls[0][0].ticketPrice).toBeUndefined()
   }, 15000)
+  it('keeps existing departure and arrival flights together and uses reference dropdowns', async () => {
+    const save = vi.fn()
+    render(
+      <App>
+        <FlightForm
+          open
+          onClose={vi.fn()}
+          onSave={save}
+          request={{
+            id: 'existing',
+            pnr: 'KEEP',
+            notes: 'ملاحظات سابقة',
+            inbound: [{ id: 'first', flightNumber: 'SV1' }],
+            outbound: [{ id: 'second', flightNumber: 'SV2' }]
+          }}
+        />
+      </App>
+    )
+    expect(screen.getAllByLabelText('Flight number')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Add flight' })).toHaveLength(2)
+    expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(9)
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(save).toHaveBeenCalledOnce())
+    expect(save.mock.calls[0][0].inbound.map((flight: { id: string }) => flight.id)).toEqual([
+      'first'
+    ])
+    expect(save.mock.calls[0][0].outbound.map((flight: { id: string }) => flight.id)).toEqual([
+      'second'
+    ])
+    expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
+    expect(save.mock.calls[0][0].historical.notes).toBe('ملاحظات سابقة')
+    expect(save.mock.calls[0][0].notes).toBeUndefined()
+  }, 15000)
   it('shows an Arabic identity message for a blank request', async () => {
     await i18n.changeLanguage('ar')
     const save = vi.fn()

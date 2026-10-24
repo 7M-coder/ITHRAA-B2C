@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Show the accommodation room-rate subtotal as base plus profit before tax; retain the full tax breakdown below.
+
+- Flatten flight table corners and fixed action header styling while retaining group colors and grid borders.
+
+- Remove flight notes from the form and table while retaining existing saved notes.
+
+- Rename flight connection group labels to Transit / ترانزيت.
+
+- Require English-only active flight values and English reference choices in both interface languages, preserving translated field labels and historical records.
+
+- Display the same translated flight reference labels in dropdowns and table cells, including airport names and IATA codes.
+
+- Separate inbound and outbound flight lists with paired departure/arrival, no reordering, connection defaults and chronology checks; translated demo dropdowns.
+
 - Organize flights into inbound/outbound journeys and connections, with tax-inclusive round-trip ticket prices, flat profit and currency conversion; archive previous flight data in store v3.
 - Add flat nightly bed profit after base-only taxes, archive the old contract total in accommodation store v2, and defer full-period coverage checks until save.
 - Seed six synthetic international flight bookings once in local storage; preserve saved records, edits, deletions and empty lists, with a bilingual demo notice.

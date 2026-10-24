@@ -8,6 +8,7 @@ import { FlightForm } from '../components/FlightForm'
 import { useInputsStore, useInputsStorageStatus } from '../hooks/useInputsStore'
 import type { InternationalFlightRequest } from '../types/domain'
 import { bookingFields, segmentFields } from '../utils/fields'
+import { flightReferenceLabel } from '../utils/selectOptions'
 import { flightPricing } from '../utils/pricing'
 
 /** Formats missing values without conflating them with zero. @param value - Field value. @returns Display text. */
@@ -49,7 +50,8 @@ export default function InternationalFlightsPage() {
         width: 180,
         className: index === 0 ? 'flight-group-start' : undefined,
         onHeaderCell: () => ({ className: 'flight-header-booking' }),
-        render: display
+        render: (value: unknown) =>
+          typeof value === 'string' ? flightReferenceLabel(field, value) : display(value)
       }))
     },
     ...(['inbound', 'outbound'] as const).flatMap((direction, directionIndex) =>
@@ -73,7 +75,9 @@ export default function InternationalFlightsPage() {
               className: `flight-header-segment-${(directionIndex + index) % 3}`
             }),
             render: (_: unknown, record: InternationalFlightRequest) =>
-              display(record[direction][index]?.[field])
+              record[direction][index]?.[field]
+                ? flightReferenceLabel(field, record[direction][index]![field]!)
+                : '—'
           }))
         })
       )
@@ -116,6 +120,7 @@ export default function InternationalFlightsPage() {
     {
       title: t('actions'),
       key: 'actions',
+      onHeaderCell: () => ({ className: 'flight-header-actions' }),
       fixed: 'right',
       width: 140,
       render: (_, record) => (
